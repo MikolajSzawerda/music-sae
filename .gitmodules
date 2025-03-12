@@ -1,3 +1,6 @@
 [submodule "dependencies/audiocraft"]
 	path = dependencies/audiocraft
 	url = https://github.com/facebookresearch/audiocraft.git
+[submodule "dependencies/rave"]
+	path = dependencies/rave
+	url = https://github.com/acids-ircam/RAVE.git

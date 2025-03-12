@@ -1,0 +1,19 @@
+[project]
+name = "rave"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "mkielbus",email = "mateusz.kielbus.mk@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "acids-rave @ file:///home/mateusz/Python/music-sae/dependencies/rave"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
