@@ -64,7 +64,7 @@ model = torch.jit.load(model_path)
 
 model.to(DEVICE)
 
-model.train()
+model.eval()
 
 layers_dict = {}
 
@@ -85,14 +85,11 @@ for name, module in model.named_modules():
 # waveform = waveform.to(DEVICE)
 
 dataset = AudioChunksDataset(audio_dir="./")
-dl = lambda x, s: DataLoader(x, batch_size=16, shuffle=s, pin_memory=True if torch.cuda.is_available() else False)
+dl = lambda x, s: DataLoader(x, batch_size=16, shuffle=s, pin_memory=True if torch.cuda.is_available() else False, generator=torch.Generator().manual_seed(42))
 train_ds, val_ds = random_split(dataset, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
 train_dl, val_dl = dl(train_ds, True), dl(val_ds, False)
-print(len(train_dl))
-print(len(val_dl))
 
 first_layer_name, first_layer_param = list(layers_dict["pqmf"].named_parameters())[0]
-print(first_layer_param.shape)
 last_encoder_layer_name, last_encoder_layer_param = list(layers_dict["encoder"].named_parameters())[-1]
 
 n = last_encoder_layer_param.shape[1]
@@ -102,11 +99,10 @@ bottlneck = []
 
 optimizer = torch.optim.Adam(sae.parameters(), lr=1e-3)
 a_coef = 1e-3
-epochs = 150
+epochs = 200
 with tqdm.tqdm(total=epochs) as pbar:
     for epoch in range(epochs):
         sae.train()
-        model.train()
         sae_diff, bottlneck, total_loss = [], [], 0
         for batch in train_dl:
             training_batch = batch.to(DEVICE)
@@ -118,7 +114,6 @@ with tqdm.tqdm(total=epochs) as pbar:
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        model.eval()
         sae.eval()
         with torch.no_grad():
             sae_diff, bottlneck, val_loss = [], [], 0
