@@ -25,7 +25,7 @@ class AudioChunksDataset(Dataset):
 
             for i in range(num_chunks):
                 chunk = waveform[:, i * chunk_size : (i + 1) * chunk_size]  # Wyciągamy fragment
-                self.data.append(chunk)
+                self.data.append(chunk.requires_grad_(False))
 
     def __len__(self):
         return len(self.data)
