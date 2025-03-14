@@ -31,6 +31,11 @@ The goal of the project is to find representations of generative music models th
 
 \*Reserve - reserve week to catch up on delayed tasks
 
+*Fallback* - SAE was not used previously in music synthesis models, which induce high risk of sudden change of the plans. In case of such event, we plan to evaluate methods like:
+- activation patching https://arxiv.org/pdf/2309.16042
+- probing and intervention https://openreview.net/pdf?id=Kr6nkNa4TQ
+- Automated Circuit Discovery https://openreview.net/pdf?id=89ia77nZ8u
+
 ### Planned Experiments
 
 #### Interpretability of trained SAEs  
@@ -76,6 +81,10 @@ The goal of the project is to find representations of generative music models th
 | SAeUron: Interpretable Concept Unlearning in Diffusion Models with Sparse Autoencoders | https://arxiv.org/pdf/2501.18052                                                            | Usage of SAE to modify output of generative model;                                                                                                       |
 | Sparse Autoencoder Insights on Voice Embeddings                                        | https://arxiv.org/pdf/2502.00127                                                            | SAE on non-transformer architecutre; SAE exhibit characteristics similar like in LLM's; most audio features are on spectrum rather than discrete         |
 | Unpacking SDXL Turbo: Interpreting Text-to-Image Models with Sparse Autoencoders       | https://arxiv.org/pdf/2410.22366                                                            | usage of SAE in image generative model; technique of visualization features causal effects                                                               |
-| Are Sparse Autoencoders Useful? A Case Study in Sparse Probing                         | https://arxiv.org/pdf/2502.16681                                                            | Limitation of SAE's, efficiency of SAE depends on strongly on data and target model                                                                      |
+| Are Sparse Autoencoders Useful? A Case Study in Sparse Probing                         | https://arxiv.org/pdf/2502.16681                                                            | Limitation of SAE's, efficiency of SAE depends on strongly on data and target model|
+| Sparse Coding Methods for Music Induced Emotion Recognition | https://annals-csis.org/Volume_8/pliks/309.pdf | Usage of SAE and sparse representation for emotions classification; theory of sparse representations; usage of pooling for retrieving valuable representation of time dependent embedings |
+| Spiking Music: Audio Compression with Event Based Auto-encoders | https://arxiv.org/pdf/2402.01571 | Usage of sparse representation(however binary) for better audio compression; prove that sprase representation is capable of holding high level information |
+| Scaling and evaluating sparse autoencoders | https://cdn.openai.com/papers/sparse-autoencoders.pdf | Pitfalls of training SAE and remedation: TopK - dead neurons, latent interpretability |
+| Simple and Controllable Music Generation | https://arxiv.org/pdf/2306.05284 | How musicgen works |
+| RAVE: A variational autoencoder for fast and high-quality neural audio synthesis | https://arxiv.org/pdf/2111.05011 | How Rave works|
 
-@TODO: Lorem ipsum
