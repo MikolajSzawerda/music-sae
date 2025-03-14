@@ -1,8 +1,6 @@
-# @TODO: PROJECT_NAME
+# MusicSAE
 
 ## 📌 Description  
-
-@TODO: DESCRIPTION
 
 This project is part of the WIMU 2025L course at the Warsaw University of Technology. Details about the schedule and scope of work can be found in the [WIMU 2025L scope](docs/wimu2025l.md) file.  
 
