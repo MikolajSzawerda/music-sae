@@ -1,0 +1,28 @@
+from __gin__ import dynamic_registration
+
+import rave
+from rave import blocks
+
+LATENT_SIZE = 16
+NOISE_AUGMENTATION = 128
+PHASE_1_DURATION = 200000
+
+blocks.EncoderV2.n_out = 1
+
+blocks.WasserteinEncoder:
+    encoder_cls = @blocks.EncoderV2
+    noise_augmentation = %NOISE_AUGMENTATION
+
+rave.RAVE:
+    encoder = @blocks.WasserteinEncoder
+    phase_1_duration = %PHASE_1_DURATION
+    weights = {
+        'fullband_spectral_distance': 2,
+        'multiband_spectral_distance': 2,
+        'adversarial': 2,
+    }
+
+rave.BetaWarmupCallback:
+    initial_value = 100
+    target_value = 100
+    warmup_len = 1
