@@ -90,19 +90,8 @@ def prepareSAE(model, train_dl: DataLoader, device: str):
     return sae
 
 
-def loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef: float):
+def sae_loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef: float):
     return torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1)
-
-
-def getActivation(model, training_batch):
-    output = model.encode(training_batch).detach()
-    return output.squeeze(-1)
-
-
-def prepareTrainingHiperparams():
-    hiperparams = {"loss": loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 180, "lr": 1e-3, "activation": getActivation}
-    return hiperparams
 
 
 def train(model, sae: nn.Module, hiperparams: dict, train_dl: DataLoader, val_dl: DataLoader, device: str,
@@ -135,11 +124,11 @@ def train(model, sae: nn.Module, hiperparams: dict, train_dl: DataLoader, val_dl
             pbar.update(1)
 
 
-def experiment(model_path: str, audio_folder_path: str):
+def experiment(model_path: str, audio_folder_path: str, hiperparams: dict):
     DEVICE = getDevice()
     model = prepareModel(model_path, DEVICE)
     train_dl, val_dl = prepareDataloaders(audio_folder_path)
     sae = prepareSAE(model, train_dl, DEVICE)
-    hiperparams = prepareTrainingHiperparams()
+    hiperparams = hiperparams
     optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
     train(model, sae, hiperparams, train_dl, val_dl, DEVICE, optimizer)
