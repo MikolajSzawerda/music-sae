@@ -10,7 +10,8 @@ requires-python = ">=3.10,<3.12"
 dependencies = [
     "acids-rave @ file:///home/mateusz/Python/music-sae/dependencies/rave",
     "ffprobe (>=0.5,<0.6)",
-    "ffmpeg (>=1.4,<2.0)"
+    "ffmpeg (>=1.4,<2.0)",
+    "librosa (>=0.11.0,<0.12.0)"
 ]
 
 [tool.poetry]

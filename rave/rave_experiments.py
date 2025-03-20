@@ -1,45 +1,38 @@
 import torch
 import torch.nn as nn
-import torchaudio
 from torch.utils.data import random_split, DataLoader, Dataset
 import tqdm
 import os
+import librosa
 
 
 class AudioChunksDataset(Dataset):
-    def __init__(self, audio_dir, chunk_size=513, sample_rate=48000):
+    def __init__(self, audio_dir, sample_rate=44100):
         self.audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
-        self.chunk_size = chunk_size
         self.sample_rate = sample_rate
         self.data = []
         # Podział dźwięku na fragmenty podczas inicjalizacji
         for file_path in self.audio_files:
-            waveform, sr = torchaudio.load(file_path)
-
-            # Konwersja do mono, jeśli dźwięk jest stereo
-            if waveform.shape[0] > 1:
-                waveform = torch.mean(waveform, dim=0, keepdim=True)  # [1, T]
-
-            # Dzielimy plik na fragmenty o rozmiarze chunk_size
-            num_chunks = waveform.shape[1] // chunk_size  # Ile pełnych segmentów zmieści się w pliku
-
-            for i in range(num_chunks):
-                chunk = waveform[:, i * chunk_size: (i + 1) * chunk_size]  # Wyciągamy fragment
-                self.data.append(chunk.requires_grad_(False))
+            waveform, sr = librosa.load(file_path, sr=sample_rate, mono=True)
+            n_fft = 1024  # Rozmiar FFT (zgodny z 513 wartościami w modelu)
+            hop_length = 256  # Przesunięcie okna
+            fourier = librosa.stft(waveform, n_fft=n_fft, hop_length=hop_length)
+            magnitude = torch.abs(torch.Tensor(fourier))
+            spectrogram_frames = magnitude.T  # Transponujemy (teraz shape to [n_frames, 513])
+            self.data.extend(spectrogram_frames)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        chunk = self.data[idx]  # Pobranie fragmentu
-        return chunk
+        frame = self.data[idx]
+        return frame.unsqueeze(0)
 
 
 class LitAutoEncoder(nn.Module):
     def __init__(self, input_dim=784, latent_dim=64, sparsity_target=0.05, sparsity_weight=0.001):
         super().__init__()
 
-        # Encoder
         self.encoder = nn.Sequential(nn.Linear(input_dim, latent_dim), nn.ReLU())
 
         self.decoder = nn.Sequential(
@@ -119,15 +112,6 @@ def train(model, sae: nn.Module, hiperparams: dict, train_dl: list[torch.Tensor]
                     val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
             pbar.set_postfix_str(f'epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}')
             pbar.update(1)
-
-
-def get_audio_files(path):
-    audio_files = []
-    valid_exts = ['.wav', '.flac', '.ogg', '.aiff', '.aif', '.aifc', '.mp3']
-    for root, _, files in os.walk(path):
-        valid_files = list(filter(lambda x: os.path.splitext(x)[1] in valid_exts, files))
-        audio_files.extend([(path, os.path.join(root, f)) for f in valid_files])
-    return audio_files
 
 
 def experiment(model_path: str, audio_folder_path: str, hiperparams: dict):
