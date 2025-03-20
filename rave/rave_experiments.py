@@ -4,8 +4,6 @@ import torchaudio
 from torch.utils.data import random_split, DataLoader, Dataset
 import tqdm
 import os
-import gin
-from rave.model import RAVE
 
 
 class AudioChunksDataset(Dataset):
@@ -61,56 +59,66 @@ def performSAE(output, sae, sae_diff, bottlneck):
     bottlneck.append(z)
 
 
-def loadGinConfig(config_paths: list[str]):
-    gin.clear_config()  # Czyścimy wcześniejszą konfigurację
-    for config_path in config_paths:
-        gin.parse_config_file(config_path)  # Wczytanie konfiguracji
+def getDevice():
+    return torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
 
-def createRaveModelFormGinConfigFile(config_paths: list[str]):
-    loadGinConfig(config_paths)  # Wczytanie konfiguracji
-    model = RAVE()  # RAVE pobierze wartości z Gin Config
-    return model
-
-
-def main():
-    model_path = "./darbouka_onnx.ts"
-    model_with_weights = torch.jit.load(model_path)
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-    model_with_weights.to(DEVICE)
+def prepareModel(path: str, device: str):
+    model_with_weights = torch.jit.load(path)
+    model_with_weights.to(device)
     model_with_weights.eval()
-    # model = createRaveModelFormGinConfigFile(["configs/v2.gin", "configs/onnx.gin"])
-    # model.to(DEVICE)
-    # model.eval()
-    # model.load_state_dict(state_dict_weights, strict=True)
-    # matching_keys = [layer_name for layer_name in state_dict_weights.keys() if layer_name in model.state_dict().keys()]
-    # unmatching_keys = [layer_name for layer_name in state_dict_weights.keys() if layer_name not in model.state_dict().keys()]
-    # print(matching_keys)
-    # print(unmatching_keys)
-    dataset = AudioChunksDataset(audio_dir="./")
-    dl = lambda x, s: DataLoader(x, batch_size=16, shuffle=s, pin_memory=True if torch.cuda.is_available() else
-                                 False, generator=torch.Generator().manual_seed(42))
+    return model_with_weights
+
+
+def createDataloader(dataset, shuffle: bool):
+    return DataLoader(dataset, batch_size=16, shuffle=shuffle, pin_memory=True if torch.cuda.is_available() else
+                      False, generator=torch.Generator().manual_seed(42))
+
+
+def prepareDataloaders(audio_dir: str):
+    dataset = AudioChunksDataset(audio_dir)
     train_ds, val_ds = random_split(dataset, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
-    train_dl, val_dl = dl(train_ds, True), dl(val_ds, False)
-    batches = []
-    for batch in train_dl:
-        batches.append(batch)
-    output = model_with_weights.encode(batches[0].to(DEVICE)).detach()
-    sae = LitAutoEncoder(input_dim=output.shape[1], latent_dim=3 * output.shape[1]).to(DEVICE)
-    sae_diff = []
-    bottlneck = []
-    optimizer = torch.optim.Adam(sae.parameters(), lr=1e-3)
-    a_coef = 1e-3
-    epochs = 180
-    with tqdm.tqdm(total=epochs) as pbar:
-        for epoch in range(epochs):
+    train_dl, val_dl = createDataloader(train_ds, True), createDataloader(val_ds, False)
+    return train_dl, val_dl
+
+
+def prepareSAE(model, train_dl: DataLoader, device: str):
+    output = model.encode(next(iter(train_dl)).to(device)).detach()
+    sae = LitAutoEncoder(input_dim=output.shape[1], latent_dim=3 * output.shape[1]).to(device)
+    output = output.to("cpu")
+    output = None
+    return sae
+
+
+def loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef: float):
+    return torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1)
+
+
+def getActivation(model, training_batch):
+    output = model.encode(training_batch).detach()
+    return output.squeeze(-1)
+
+
+def prepareTrainingHiperparams():
+    hiperparams = {"loss": loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
+                   "epochs": 180, "lr": 1e-3, "activation": getActivation}
+    return hiperparams
+
+
+def train(model, sae: nn.Module, hiperparams: dict, train_dl: DataLoader, val_dl: DataLoader, device: str,
+          optimizer: torch.optim.Optimizer):
+    with tqdm.tqdm(total=hiperparams["epochs"]) as pbar:
+        sae_diff = hiperparams["loss_params"]["sae_diff"]
+        bottlneck = hiperparams["loss_params"]["bottlneck"]
+        a_coef = hiperparams["loss_params"]["a_coef"]
+        for epoch in range(hiperparams["epochs"]):
             sae.train()
             sae_diff, bottlneck, total_loss = [], [], 0
-            for batch in batches:
-                training_batch = batch.to(DEVICE)
-                output = model_with_weights.encode(training_batch).detach()
-                performSAE(output.squeeze(-1), sae, sae_diff, bottlneck)
-                loss = torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1)
+            for batch in train_dl:
+                training_batch = batch.to(device).detach()
+                output = hiperparams["activation"](model, training_batch)
+                performSAE(output, sae, sae_diff, bottlneck)
+                loss = hiperparams["loss"](sae_diff, bottlneck, a_coef)
                 total_loss += loss.item()
                 optimizer.zero_grad()
                 loss.backward()
@@ -119,13 +127,19 @@ def main():
             with torch.no_grad():
                 sae_diff, bottlneck, val_loss = [], [], 0
                 for batch in val_dl:
-                    training_batch = batch.to(DEVICE)
-                    output = model_with_weights.encode(training_batch)
-                    performSAE(output.squeeze(-1), sae, sae_diff, bottlneck)
-                    val_loss += torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1).item()
+                    training_batch = batch.to(device).detach()
+                    output = hiperparams["activation"](model, training_batch)
+                    performSAE(output, sae, sae_diff, bottlneck)
+                    val_loss += hiperparams["loss"](sae_diff, bottlneck, a_coef).item()
             pbar.set_postfix_str(f'epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}')
             pbar.update(1)
 
 
-if __name__ == "__main__":
-    main()
+def experiment(model_path: str, audio_folder_path: str):
+    DEVICE = getDevice()
+    model = prepareModel(model_path, DEVICE)
+    train_dl, val_dl = prepareDataloaders(audio_folder_path)
+    sae = prepareSAE(model, train_dl, DEVICE)
+    hiperparams = prepareTrainingHiperparams()
+    optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
+    train(model, sae, hiperparams, train_dl, val_dl, DEVICE, optimizer)
