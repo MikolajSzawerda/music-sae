@@ -103,9 +103,9 @@ def prepareSAE(model, train_dl: DataLoader, device: str, activation, input_dim: 
     output = activation(model, next(iter(train_dl)).to(device)).detach()
     in_channels = output.shape[1]
     if input_dim:
-        sae = LitAutoEncoder(input_dim=input_dim, latent_dim=3 * input_dim).to(device)
+        sae = LitAutoEncoder(input_dim=input_dim, latent_dim=5 * input_dim).to(device)
     else:
-        sae = LitAutoEncoder(input_dim=in_channels, latent_dim=3 * in_channels).to(device)
+        sae = LitAutoEncoder(input_dim=in_channels, latent_dim=5 * in_channels).to(device)
     return sae
 
 
