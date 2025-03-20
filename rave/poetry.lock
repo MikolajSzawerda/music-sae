@@ -516,6 +516,28 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "ffmpeg"
+version = "1.4"
+description = "ffmpeg python package url [https://github.com/jiashaokun/ffmpeg]"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "ffmpeg-1.4.tar.gz", hash = "sha256:6931692c890ff21d39938433c2189747815dca0c60ddc7f9bb97f199dba0b5b9"},
+]
+
+[[package]]
+name = "ffprobe"
+version = "0.5"
+description = "Wrapper around ffprobe command to extract metadata from media files"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "ffprobe-0.5.zip", hash = "sha256:f7dc048df62c6ccc1c602c865a7f0976b2679200fd07ebdc34ce51e9a8205b76"},
+]
+
+[[package]]
 name = "filelock"
 version = "3.17.0"
 description = "A platform independent file lock."
@@ -2580,4 +2602,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.12"
-content-hash = "1fe0ada44849627c04c780e30a2fc47c04d5943f4d5f2368e30fe0a7cc8c7dad"
+content-hash = "342bd158f903f8c19f22b1629dbe3317af9a930bf7074ec831611154aa35f47b"

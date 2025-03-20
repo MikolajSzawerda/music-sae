@@ -82,11 +82,9 @@ def prepareDataloaders(audio_dir: str):
     return train_dl, val_dl
 
 
-def prepareSAE(model, train_dl: DataLoader, device: str):
-    output = model.encode(next(iter(train_dl)).to(device)).detach()
+def prepareSAE(model, train_dl: DataLoader, device: str, activation):
+    output = activation(model, next(iter(train_dl)).to(device)).detach()
     sae = LitAutoEncoder(input_dim=output.shape[1], latent_dim=3 * output.shape[1]).to(device)
-    output = output.to("cpu")
-    output = None
     return sae
 
 
@@ -94,41 +92,49 @@ def sae_loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef
     return torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1)
 
 
-def train(model, sae: nn.Module, hiperparams: dict, train_dl: DataLoader, val_dl: DataLoader, device: str,
+def train(model, sae: nn.Module, hiperparams: dict, train_dl: list[torch.Tensor], val_dl: list[torch.Tensor],
+          device: str,
           optimizer: torch.optim.Optimizer):
     with tqdm.tqdm(total=hiperparams["epochs"]) as pbar:
-        sae_diff = hiperparams["loss_params"]["sae_diff"]
-        bottlneck = hiperparams["loss_params"]["bottlneck"]
-        a_coef = hiperparams["loss_params"]["a_coef"]
         for epoch in range(hiperparams["epochs"]):
             sae.train()
-            sae_diff, bottlneck, total_loss = [], [], 0
+            hiperparams["loss_params"]["sae_diff"], hiperparams["loss_params"]["bottlneck"], total_loss = [], [], 0
             for batch in train_dl:
                 training_batch = batch.to(device).detach()
                 output = hiperparams["activation"](model, training_batch)
-                performSAE(output, sae, sae_diff, bottlneck)
-                loss = hiperparams["loss"](sae_diff, bottlneck, a_coef)
+                performSAE(output, sae, hiperparams["loss_params"]["sae_diff"], hiperparams["loss_params"]["bottlneck"])
+                loss = hiperparams["loss"](**hiperparams["loss_params"])
                 total_loss += loss.item()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
             sae.eval()
             with torch.no_grad():
-                sae_diff, bottlneck, val_loss = [], [], 0
+                hiperparams["loss_params"]["sae_diff"], hiperparams["loss_params"]["bottlneck"], val_loss = [], [], 0
                 for batch in val_dl:
                     training_batch = batch.to(device).detach()
                     output = hiperparams["activation"](model, training_batch)
-                    performSAE(output, sae, sae_diff, bottlneck)
-                    val_loss += hiperparams["loss"](sae_diff, bottlneck, a_coef).item()
+                    performSAE(output, sae, hiperparams["loss_params"]["sae_diff"],
+                               hiperparams["loss_params"]["bottlneck"])
+                    val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
             pbar.set_postfix_str(f'epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}')
             pbar.update(1)
+
+
+def get_audio_files(path):
+    audio_files = []
+    valid_exts = ['.wav', '.flac', '.ogg', '.aiff', '.aif', '.aifc', '.mp3']
+    for root, _, files in os.walk(path):
+        valid_files = list(filter(lambda x: os.path.splitext(x)[1] in valid_exts, files))
+        audio_files.extend([(path, os.path.join(root, f)) for f in valid_files])
+    return audio_files
 
 
 def experiment(model_path: str, audio_folder_path: str, hiperparams: dict):
     DEVICE = getDevice()
     model = prepareModel(model_path, DEVICE)
     train_dl, val_dl = prepareDataloaders(audio_folder_path)
-    sae = prepareSAE(model, train_dl, DEVICE)
+    sae = prepareSAE(model, train_dl, DEVICE, hiperparams["activation"])
     hiperparams = hiperparams
     optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
     train(model, sae, hiperparams, train_dl, val_dl, DEVICE, optimizer)
