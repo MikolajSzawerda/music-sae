@@ -79,7 +79,6 @@ def main():
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
     model_with_weights.to(DEVICE)
     model_with_weights.eval()
-    # state_dict_weights = model_with_weights.state_dict()
     # model = createRaveModelFormGinConfigFile(["configs/v2.gin", "configs/onnx.gin"])
     # model.to(DEVICE)
     # model.eval()
@@ -93,23 +92,24 @@ def main():
                                  False, generator=torch.Generator().manual_seed(42))
     train_ds, val_ds = random_split(dataset, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
     train_dl, val_dl = dl(train_ds, True), dl(val_ds, False)
-    last_encoder_layer_name, last_encoder_layer_param = list(model_with_weights.encoder.named_parameters())[-1]
-    n = last_encoder_layer_param.shape[1]
-    sae = LitAutoEncoder(input_dim=n, latent_dim=5 * n).to(DEVICE)
+    batches = []
+    for batch in train_dl:
+        batches.append(batch)
+    output = model_with_weights.encode(batches[0].to(DEVICE)).detach()
+    sae = LitAutoEncoder(input_dim=output.shape[1], latent_dim=3 * output.shape[1]).to(DEVICE)
     sae_diff = []
     bottlneck = []
     optimizer = torch.optim.Adam(sae.parameters(), lr=1e-3)
     a_coef = 1e-3
-    epochs = 200
+    epochs = 180
     with tqdm.tqdm(total=epochs) as pbar:
         for epoch in range(epochs):
             sae.train()
             sae_diff, bottlneck, total_loss = [], [], 0
-            for batch in train_dl:
+            for batch in batches:
                 training_batch = batch.to(DEVICE)
-                output1 = model_with_weights.pqmf(training_batch).detach()
-                output2 = model_with_weights.encoder(output1).detach()
-                performSAE(output2.squeeze(-1), sae, sae_diff, bottlneck)
+                output = model_with_weights.encode(training_batch).detach()
+                performSAE(output.squeeze(-1), sae, sae_diff, bottlneck)
                 loss = torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1)
                 total_loss += loss.item()
                 optimizer.zero_grad()
@@ -120,9 +120,8 @@ def main():
                 sae_diff, bottlneck, val_loss = [], [], 0
                 for batch in val_dl:
                     training_batch = batch.to(DEVICE)
-                    output1 = model_with_weights.pqmf(training_batch)
-                    output2 = model_with_weights.encoder(output1)
-                    performSAE(output2.squeeze(-1), sae, sae_diff, bottlneck)
+                    output = model_with_weights.encode(training_batch)
+                    performSAE(output.squeeze(-1), sae, sae_diff, bottlneck)
                     val_loss += torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1).item()
             pbar.set_postfix_str(f'epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}')
             pbar.update(1)
