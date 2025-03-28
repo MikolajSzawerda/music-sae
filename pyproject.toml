@@ -7,8 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-audiocraft = { path = "dependencies/audiocraft" }
 ipykernel = "^6.29.5"
+transformers = "^4.50.0"
+scipy = "^1.15.2"
+nnsight = "^0.4.5"
+datasets = "^3.4.1"
+soundfile = "^0.13.1"
 
 
 [build-system]
