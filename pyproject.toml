@@ -18,6 +18,7 @@ dotenv = "^0.9.9"
 torchaudio = "^2.6.0"
 simple-parsing = "^0.1.7"
 seaborn = "^0.13.2"
+toolz = "^1.0.0"
 
 
 [build-system]
