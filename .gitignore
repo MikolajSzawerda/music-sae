@@ -87,3 +87,5 @@ target/
 # Mypy cache
 .mypy_cache/
 *.iml
+
+dirty_notebooks/

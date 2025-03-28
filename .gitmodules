@@ -13,3 +13,6 @@
 [submodule "dependencies/riffusion"]
 	path = dependencies/riffusion
 	url = https://github.com/riffusion/riffusion-hobby.git
+[submodule "dependencies/nnsight"]
+	path = dependencies/nnsight
+	url = https://github.com/ndif-team/nnsight.git

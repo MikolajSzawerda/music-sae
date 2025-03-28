@@ -13,6 +13,11 @@ scipy = "^1.15.2"
 nnsight = "^0.4.5"
 datasets = "^3.4.1"
 soundfile = "^0.13.1"
+jupytext = "^1.16.7"
+dotenv = "^0.9.9"
+torchaudio = "^2.6.0"
+simple-parsing = "^0.1.7"
+seaborn = "^0.13.2"
 
 
 [build-system]
