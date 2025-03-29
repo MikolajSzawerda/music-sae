@@ -33,8 +33,9 @@ Contribute to be first! 🚀
 
 ## Requirements
 
-- python 3.10 (exact)
+- python ^3.10
 - poetry
+- just
 
 ## 🚀 Usage  
 
@@ -44,7 +45,7 @@ git clone --recurse-submodules -j8 git@github.com:MikolajSzawerda/music-sae.git
 ```
 2. Install dependencies
 ```
-poetry install
+just
 ```
 
 ## 🤝 Contribution  
