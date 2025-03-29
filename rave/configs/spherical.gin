@@ -1,0 +1,15 @@
+from __gin__ import dynamic_registration
+
+import rave
+from rave import blocks
+
+LATENT_SIZE = 16
+
+blocks.EncoderV2.n_out = 1
+
+blocks.SphericalEncoder:
+    encoder_cls = @blocks.EncoderV2
+
+rave.RAVE:
+    encoder = @blocks.SphericalEncoder
+    phase_1_duration = 200000
