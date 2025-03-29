@@ -8,6 +8,7 @@ from datasets import load_dataset
 import logging
 from uuid import uuid4
 from tqdm import tqdm
+from accelerate import PartialState
 logger = logging.getLogger(__name__)
 
 
@@ -34,26 +35,31 @@ def get_prompt_batches(cfg: AblateScriptConfig):
 
 def main():
     args = parse(AblateScriptConfig)
+    batches = get_prompt_batches(args)
     nn_model = MusicGenLanguageModel(f"facebook/musicgen-{args.model_name}", device_map=args.device)
     with nn_model.generate("Hello world!", max_new_tokens=1):
         ...
-    for layer_id in args.ablation_layers:
-        batches = get_prompt_batches(args)
-        path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
-                / args.dataset_name.split('/')[1]
-                / args.dataset_split / args.concept.replace(' ', '_') / str(layer_id))
-        path.mkdir(exist_ok=True, parents=True)
-        for batch in tqdm(batches, desc=f'l: {layer_id}'):
-            prompts = batch[args.dataset_column] * args.music_per_prompt
-            layer_path =f'decoder.model.decoder.layers.{layer_id}'
-            outputs = nn_model.generate_with_ablation(layer_path, prompts, args.num_tokens)
-            for audio_idx in range(len(prompts)):
-                torchaudio.save(
-                    path / f'out_{str(uuid4())[:6]}.wav',
-                    src=outputs[0][audio_idx].detach().cpu(),
-                    sample_rate=nn_model.config.sampling_rate,
-                    channels_first=True,
-                )
+    
+    distributed_state = PartialState()
+    nn_model.device_map = distributed_state.device
+    nn_model.to(distributed_state.device)
+    with distributed_state.split_between_processes(args.ablation_layers) as layer_idxs:
+        for layer_id in layer_idxs:
+            path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
+                    / args.dataset_name.split('/')[1]
+                    / args.dataset_split / args.concept.replace(' ', '_') / str(layer_id))
+            path.mkdir(exist_ok=True, parents=True)
+            for batch in tqdm(batches, desc=f'l: {layer_id}'):
+                prompts = batch[args.dataset_column] * args.music_per_prompt
+                layer =nn_model.decoder.model.decoder.layers[layer_id]
+                outputs = nn_model.generate_with_ablation(layer, prompts, args.num_tokens)
+                for audio_idx in range(len(prompts)):
+                    torchaudio.save(
+                        path / f'out_{str(uuid4())[:6]}.wav',
+                        src=outputs[0][audio_idx].detach().cpu(),
+                        sample_rate=nn_model.config.sampling_rate,
+                        channels_first=True,
+                    )
 
 if __name__ == "__main__":
     main()
