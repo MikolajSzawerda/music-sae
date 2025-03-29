@@ -1,6 +1,6 @@
 from transformers import MusicgenForConditionalGeneration, AutoProcessor
 from nnsight import LanguageModel
-
+import nnsight
 
 
 class MusicGenLanguageModel(LanguageModel):
@@ -33,3 +33,12 @@ class MusicGenLanguageModel(LanguageModel):
         self._load_tokenizer(repo_id, **tokenizer_kwargs)
         return MusicgenForConditionalGeneration.from_pretrained(repo_id).to(kwargs["device_map"])
 
+    def generate_with_ablation(self, layer_path: str, prompts: list[str], max_tokens: int, ):
+        ablate_layer = self.get_submodule(layer_path)
+        with self.generate(prompts, max_new_tokens=max_tokens):
+            outputs = nnsight.list().save()
+            for _ in range(max_tokens):
+                ablate_layer.output[0][:] = ablate_layer.input[0][:]
+                outputs.append(self.generator.output)
+                self.next()
+        return outputs

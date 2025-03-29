@@ -1,9 +1,5 @@
-from transformers import AutoProcessor, MusicgenForConditionalGeneration, AutoConfig
-import torch
 import torchaudio
-from nnsight import LanguageModel
 import nnsight
-from IPython.display import clear_output
 from musicsae.nnsight_model import MusicGenLanguageModel
 from src.project_config import OUTPUT_DATA_DIR
 from dataclasses import dataclass
@@ -13,12 +9,6 @@ import logging
 from uuid import uuid4
 from tqdm import tqdm
 logger = logging.getLogger(__name__)
-#
-# clear_output()
-# # -
-#
-# tokens = 255
-# prompt = "Recreate the essence of a classic video game theme with chiptune sounds and nostalgic melodies."
 
 
 @dataclass
@@ -48,20 +38,15 @@ def main():
     with nn_model.generate("Hello world!", max_new_tokens=1):
         ...
     for layer_id in args.ablation_layers:
-        ablate_layer = nn_model.decoder.model.decoder.layers[layer_id]
         batches = get_prompt_batches(args)
+        path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
+                / args.dataset_name.split('/')[1]
+                / args.dataset_split / args.concept.replace(' ', '_') / str(layer_id))
+        path.mkdir(exist_ok=True, parents=True)
         for batch in tqdm(batches, desc=f'l: {layer_id}'):
             prompts = batch[args.dataset_column] * args.music_per_prompt
-            with nn_model.generate(prompts, max_new_tokens=args.num_tokens):
-                outputs = nnsight.list().save()  # Initialize & .save() nnsight list
-                for _ in range(args.num_tokens):
-                    ablate_layer.output[0][:] = ablate_layer.input[0][:]
-                    outputs.append(nn_model.generator.output)
-                    nn_model.next()
-            path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
-                        / args.dataset_name.split('/')[1]
-                        / args.dataset_split / args.concept.replace(' ', '_') / str(layer_id) )
-            path.mkdir(exist_ok=True, parents=True)
+            layer_path =f'decoder.model.decoder.layers.{layer_id}'
+            outputs = nn_model.generate_with_ablation(layer_path, prompts, args.num_tokens)
             for audio_idx in range(len(prompts)):
                 torchaudio.save(
                     path / f'out_{str(uuid4())[:6]}.wav',
