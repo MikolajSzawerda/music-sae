@@ -19,13 +19,18 @@ Contribute to be first! 🚀
 ## 📂 Project Structure  
 
 ```
-/@TODO: PROJECT_NAME
+/MusicSAE
+│── conf/             # Experiments configuration
 │── data/             # Data
 │── dependencies/     # Project dependencies
 │── docs/             # Project documentation
 │── logs/             # Logs
 │── models/           # Models
+│── musicsae/         # SAE for autoregressive music models
 │── notebooks/        # Notebooks with research doe
+│── rave/             # SAE for RAVE model
+│── scripts/          # Experiments
+│── src/              # Common subprojects code
 │── README.md         # Project documentation
 │── pyproject.toml    # pyproject.toml 
 │── LICENSE           # License file
@@ -33,8 +38,9 @@ Contribute to be first! 🚀
 
 ## Requirements
 
-- python 3.10 (exact)
+- python ^3.10
 - poetry
+- just
 
 ## 🚀 Usage  
 
@@ -44,7 +50,7 @@ git clone --recurse-submodules -j8 git@github.com:MikolajSzawerda/music-sae.git
 ```
 2. Install dependencies
 ```
-poetry install
+just
 ```
 
 ## 🤝 Contribution  

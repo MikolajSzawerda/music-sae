@@ -1,0 +1,12 @@
+model_name: small
+device: cuda
+dataset:
+  name: amaai-lab/MusicBench
+  split: train
+  column: main_caption
+  max_rows: 100
+batch_size: 32
+music_per_prompt: 5
+concept: "electric guitar"
+ablation_layers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+num_tokens: 255
