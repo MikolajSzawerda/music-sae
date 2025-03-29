@@ -19,13 +19,18 @@ Contribute to be first! 🚀
 ## 📂 Project Structure  
 
 ```
-/@TODO: PROJECT_NAME
+/MusicSAE
+│── conf/             # Experiments configuration
 │── data/             # Data
 │── dependencies/     # Project dependencies
 │── docs/             # Project documentation
 │── logs/             # Logs
 │── models/           # Models
+│── musicsae/         # SAE for autoregressive music models
 │── notebooks/        # Notebooks with research doe
+│── rave/             # SAE for RAVE model
+│── scripts/          # Experiments
+│── src/              # Common subprojects code
 │── README.md         # Project documentation
 │── pyproject.toml    # pyproject.toml 
 │── LICENSE           # License file
