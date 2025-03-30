@@ -24,7 +24,7 @@ class AblateScriptConfig:
     dataset: AblateDatasetScriptConfig
     model_name: str = 'small'
     device: str = 'cuda'
-    batch_size: int = 32
+    batch_size: int = 10
     music_per_prompt: int = 1
     concept: str = 'anime'
     ablation_layers: list[int] = list_field()
@@ -43,20 +43,20 @@ def get_prompt_batches(cfg: AblateScriptConfig):
 @hydra.main(version_base=None, config_path="../conf/ablation", config_name="config")
 def main(args: AblateScriptConfig):
     batches = get_prompt_batches(args)
+    distributed_state = PartialState()
     nn_model = MusicGenLanguageModel(f"facebook/musicgen-{args.model_name}", device_map=args.device)
     with nn_model.generate("Hello world!", max_new_tokens=1):
         ...
-    
-    distributed_state = PartialState()
     nn_model.device_map = distributed_state.device
     nn_model.to(distributed_state.device)
-    with distributed_state.split_between_processes(args.ablation_layers) as layer_idxs:
+    with distributed_state.split_between_processes(list(args.ablation_layers)) as layer_idxs:
         for layer_id in layer_idxs:
             path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
                     / args.dataset.name.split('/')[1]
                     / args.dataset.split / args.concept.replace(' ', '_') / str(layer_id))
             path.mkdir(exist_ok=True, parents=True)
-            for batch in tqdm(batches, desc=f'l: {layer_id}'):
+            dataloader = tqdm(batches) if distributed_state.is_main_process and distributed_state.local_process_index == 0 else batches
+            for batch in dataloader:
                 prompts = batch[args.dataset.column] * args.music_per_prompt
                 layer =nn_model.decoder.model.decoder.layers[layer_id]
                 outputs = nn_model.generate_with_ablation(layer, prompts, args.num_tokens)
