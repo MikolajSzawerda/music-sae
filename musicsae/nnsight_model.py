@@ -42,3 +42,12 @@ class MusicGenLanguageModel(LanguageModel):
                 outputs.append(self.generator.output)
                 self.next()
         return outputs
+
+    @torch.no_grad()
+    def generate_clean(self, prompts: list[str], max_tokens: int ):
+        with self.generate(prompts, max_new_tokens=max_tokens):
+            outputs = nnsight.list().save()
+            for _ in range(max_tokens):
+                outputs.append(self.generator.output)
+                self.next()
+        return outputs

@@ -29,6 +29,7 @@ class AblateScriptConfig:
     concept: str = 'anime'
     ablation_layers: list[int] = list_field()
     num_tokens: int = 255
+    run_with_clean: bool = False
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=AblateScriptConfig)
@@ -49,17 +50,25 @@ def main(args: AblateScriptConfig):
         ...
     nn_model.device_map = distributed_state.device
     nn_model.to(distributed_state.device)
-    with distributed_state.split_between_processes(list(args.ablation_layers)) as layer_idxs:
-        for layer_id in layer_idxs:
+    jobs = list(args.ablation_layers) + ['pure'] if args.run_with_clean else []
+    with distributed_state.split_between_processes(jobs) as job_idxs:
+        for layer_id in job_idxs:
             path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
                     / args.dataset.name.split('/')[1]
                     / args.dataset.split / args.concept.replace(' ', '_') / str(layer_id))
             path.mkdir(exist_ok=True, parents=True)
             dataloader = tqdm(batches) if distributed_state.is_main_process and distributed_state.local_process_index == 0 else batches
+
+            def gen_clean(prompts: list[str]):
+                return nn_model.generate_clean(prompts, args.num_tokens)
+            def gen_ablate(prompts: list[str]):
+                layer = nn_model.decoder.model.decoder.layers[layer_id]
+                return nn_model.generate_with_ablation(layer, prompts, args.num_tokens)
+            gen_func = gen_clean if layer_id == 'pure' else gen_ablate
+
             for batch in dataloader:
                 prompts = batch[args.dataset.column] * args.music_per_prompt
-                layer =nn_model.decoder.model.decoder.layers[layer_id]
-                outputs = nn_model.generate_with_ablation(layer, prompts, args.num_tokens)
+                outputs = gen_func(prompts)
                 for audio_idx in range(len(prompts)):
                     torchaudio.save(
                         path / f'out_{str(uuid4())[:6]}.wav',
