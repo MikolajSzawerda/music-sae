@@ -38,7 +38,7 @@ class MusicGenLanguageModel(LanguageModel):
         with self.generate(prompts, max_new_tokens=max_tokens):
             outputs = nnsight.list().save()
             for _ in range(max_tokens):
-                layer.output[0][:] = layer.input[0][:]
+                layer.output[0][:] = layer.input[:]
                 outputs.append(self.generator.output)
                 self.next()
         return outputs

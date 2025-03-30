@@ -10,6 +10,7 @@ from tqdm import tqdm
 from accelerate import PartialState
 import hydra
 from hydra.core.config_store import ConfigStore
+from transformers import set_seed
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -43,6 +44,7 @@ def get_prompt_batches(cfg: AblateScriptConfig):
 
 @hydra.main(version_base=None, config_path="../conf/ablation", config_name="config")
 def main(args: AblateScriptConfig):
+    set_seed(args.seed)
     batches = get_prompt_batches(args)
     distributed_state = PartialState()
     nn_model = MusicGenLanguageModel(f"facebook/musicgen-{args.model_name}", device_map=args.device)
@@ -50,7 +52,7 @@ def main(args: AblateScriptConfig):
         ...
     nn_model.device_map = distributed_state.device
     nn_model.to(distributed_state.device)
-    jobs = list(args.ablation_layers) + ['pure'] if args.run_with_clean else []
+    jobs = list(args.ablation_layers) + (['pure'] if args.run_with_clean else [])
     with distributed_state.split_between_processes(jobs) as job_idxs:
         for layer_id in job_idxs:
             path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name

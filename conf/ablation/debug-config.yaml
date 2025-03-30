@@ -7,7 +7,7 @@ dataset:
   max_rows: 10
 batch_size: 2
 music_per_prompt: 1
-ablation_layers: []
+ablation_layers: [5]
 num_tokens: 10
-run_with_clean: True
+run_with_clean: False
 seed: 42
