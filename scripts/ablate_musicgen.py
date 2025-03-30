@@ -26,17 +26,17 @@ class AblateScriptConfig:
     device: str = 'cuda'
     batch_size: int = 10
     music_per_prompt: int = 1
-    concept: str = 'anime'
     ablation_layers: list[int] = list_field()
     num_tokens: int = 255
     run_with_clean: bool = False
+    seed: int = 42
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=AblateScriptConfig)
 
 def get_prompt_batches(cfg: AblateScriptConfig):
     prompts_ds = load_dataset(cfg.dataset.name, split=cfg.dataset.split).select_columns([cfg.dataset.column])
-    prompts_ds = prompts_ds.filter(lambda x: cfg.concept in x[cfg.dataset.column])
+    prompts_ds = prompts_ds.shuffle(cfg.seed)
     prompts_ds = prompts_ds.select(range(cfg.dataset.max_rows))
     logger.info(f"# of prompts: {prompts_ds.num_rows}")
     return prompts_ds.batch(cfg.batch_size // cfg.music_per_prompt)
@@ -55,7 +55,7 @@ def main(args: AblateScriptConfig):
         for layer_id in job_idxs:
             path = (OUTPUT_DATA_DIR / 'ablate' / args.model_name
                     / args.dataset.name.split('/')[1]
-                    / args.dataset.split / args.concept.replace(' ', '_') / str(layer_id))
+                    / args.dataset.split / str(layer_id))
             path.mkdir(exist_ok=True, parents=True)
             dataloader = tqdm(batches) if distributed_state.is_main_process and distributed_state.local_process_index == 0 else batches
 
