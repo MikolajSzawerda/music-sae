@@ -1,0 +1,2 @@
+# Dataset source
+Qingyang Xi, Rachel M. Bittner, Johan Pauwels, Xuzhou Ye, & Juan P. Bello. (2019). GuitarSet (1.1.0) [Data set]. 19th International Society for Music Information Retrieval Conference (ISMIR), Paris, France. Zenodo. https://doi.org/10.5281/zenodo.3371780

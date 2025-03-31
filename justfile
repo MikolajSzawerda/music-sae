@@ -20,3 +20,9 @@ musicgen-ablation-relative-fad generations_dir score_path:
     for item in $(seq 1 24); do 
         uv run fadtk --inf clap-laion-audio {{ generations_dir }}/pure {{ generations_dir }}/$item {{ score_path }};
     done
+
+create-guitar-dataset:
+    uv run scripts/create_dataset.py prepare-dataset
+
+create-guitar-dataset-plots:
+    uv run scripts/create_dataset.py generate-plots
