@@ -1,28 +1,33 @@
-[tool.poetry]
+[project]
 name = "musicsae"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = [{ name = "Mikołaj Szawerda", email = "mikolaj.szawerda@gmail.com" }, { name = "Mateusz Kiełbus", email = "mateusz.kielbus.mk@gmail.com" }, { name = "Patryk Filip Gryz", email = "pfgryz@gmail.com"}]
+requires-python = "~=3.10"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-ipykernel = "^6.29.5"
-transformers = "^4.50.0"
-scipy = "^1.15.2"
-nnsight = "^0.4.5"
-datasets = "^3.4.1"
-soundfile = "^0.13.1"
-jupytext = "^1.16.7"
-dotenv = "^0.9.9"
-torchaudio = "^2.6.0"
-simple-parsing = "^0.1.7"
-seaborn = "^0.13.2"
-toolz = "^1.0.0"
-tqdm = "^4.67.1"
-jupyter = "^1.1.1"
-hydra-core = "^1.3.2"
+dependencies = [
+    "ipykernel>=6.29.5,<7",
+    "transformers>=4.50.0,<5",
+    "scipy>=1.15.2,<2",
+    "nnsight>=0.4.5,<0.5",
+    "datasets>=3.4.1,<4",
+    "soundfile>=0.13.1,<0.14",
+    "jupytext>=1.16.7,<2",
+    "dotenv>=0.9.9,<0.10",
+    "torchaudio>=2.6.0,<3",
+    "simple-parsing>=0.1.7,<0.2",
+    "seaborn>=0.13.2,<0.14",
+    "toolz>=1.0.0,<2",
+    "tqdm>=4.67.1,<5",
+    "jupyter>=1.1.1,<2",
+    "hydra-core>=1.3.2,<2",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.2",
+]
