@@ -1,0 +1,13 @@
+model_name: medium
+device: cuda
+dataset:
+  name: amaai-lab/MusicBench
+  split: train
+  column: main_caption
+  max_rows: 100
+batch_size: 15
+music_per_prompt: 1
+ablation_layers: [10, 11, 12, 13, 14, 15, 16]
+num_tokens: 255
+run_with_clean: True
+seed: 42
