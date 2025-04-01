@@ -16,7 +16,7 @@ def createRaveModelFormGinConfigFile(config_paths: list[str]):
 
 
 def main():
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = createRaveModelFormGinConfigFile(["configs/onnx.gin"])
     model.to(DEVICE)
     model.eval()

@@ -39,8 +39,9 @@ Contribute to be first! 🚀
 ## Requirements
 
 - python ^3.10
-- poetry
+- uv
 - just
+- ruff
 
 ## 🚀 Usage  
 
