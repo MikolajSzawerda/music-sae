@@ -1,6 +1,7 @@
 import argparse
 import torch
 from rave_experiments import getDevice, prepareModel, AudioChunksDataset, createDataloader
+import tqdm
 
 
 class BadLayerNameException(Exception):
@@ -34,26 +35,26 @@ def prepareLatentTensor(model, output: torch.Tensor):
     return z1
 
 
-def getActivationEncoderLayer(model, batch, layer_name: str):
-    encoder_net = list(list(list(model.encoder.named_children())[0][1].named_children())[0][1].named_children())
-    output = model.pqmf(batch).detach()
-    for name, module in encoder_net:
+def iterateThroughNet(net, output: torch.Tensor, layer_name: str):
+    for name, module in net:
         output = module(output).detach()
         if name == layer_name:
             break
     return output
 
 
-def getActivationDecoderLayer1(model, batch):
-    output = model.encode(batch).detach()
-    output = prepareLatentTensor(model, output)
-    first_decoder_layer = list(list(model.decoder.named_children())[0][1].named_children())[0][1]
-    output = first_decoder_layer(output)
+def getActivationEncoderLayer(model, batch, layer_name: str):
+    encoder_net = list(list(list(model.encoder.named_children())[0][1].named_children())[0][1].named_children())
+    output = model.pqmf(batch).detach()
+    output = iterateThroughNet(encoder_net, output, layer_name)
     return output
 
 
-def getActivationEncoder(model, batch):
+def getActivationDecoderLayer(model, batch, layer_name: str):
     output = model.encode(batch).detach()
+    output = prepareLatentTensor(model, output)
+    decoder_net = list(list(model.decoder.named_children())[0][1].named_children())
+    output = iterateThroughNet(decoder_net, output, layer_name)
     return output
 
 
@@ -69,15 +70,17 @@ def getCMDArgs():
 
 
 def prepareActivationFuncParams(layer_name: str, model):
-    if layer_name in ("encoder_last", "decoder_1"):
-        return {"model": model}
-    return {"model": model, "layer_name": layer_name.split(sep="_")[1]}
+    return {"model": model, "layer_name": layer_name.split(sep="_")[2]}
 
 
 def chooseActivationFunction(layer_name: str):
-    switch = {"encoder_7": getActivationEncoderLayer,
-              "encoder_last": getActivationEncoder,
-              "decoder_1": getActivationDecoderLayer1}
+    base_encoder_name = "darbouka_encoder_"
+    base_decoder_name = "darbouka_decoder_"
+    switch = {}
+    for number in range(15):
+        switch[base_encoder_name + str(number)] = getActivationEncoderLayer
+    for number in range(9):
+        switch[base_decoder_name + str(number)] = getActivationDecoderLayer
     if layer_name not in switch.keys():
         raise BadLayerNameException()
     return switch[layer_name]
@@ -85,12 +88,15 @@ def chooseActivationFunction(layer_name: str):
 
 def gatherActivations(activation_func, dataloader: torch.utils.data.DataLoader, activation_func_params, device: str):
     activations = []
-    for batch in dataloader:
-        batch = batch.to(device)
-        activation_func_params["batch"] = batch
-        output = activation_func(**activation_func_params)
-        output = output.flatten(start_dim=1)
-        activations.append(output)
+    with tqdm.tqdm(total=len(dataloader)) as pbar:
+        for number, batch in enumerate(dataloader):
+            batch = batch.to(device)
+            activation_func_params["batch"] = batch
+            output = activation_func(**activation_func_params)
+            output = output.flatten(start_dim=1)
+            activations.append(output)
+            pbar.set_postfix_str(f"Batch number: {number}")
+            pbar.update(1)
     return activations
 
 
