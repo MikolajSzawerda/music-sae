@@ -1,6 +1,7 @@
-default: prepare-env
+ruffdefault: prepare-env
 
 prepare-env:
+	uvx pre-commit install
     uv sync
 
 musicgen-ablation-generation:
