@@ -49,7 +49,7 @@ coverage.xml
 
 # Django stuff:
 *.log
-
+.venv/
 # Sphinx documentation
 docs/_build/
 
@@ -87,3 +87,6 @@ target/
 # Mypy cache
 .mypy_cache/
 *.iml
+
+dirty_notebooks/
+outputs/
