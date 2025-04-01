@@ -41,7 +41,7 @@ class AudioChunksDataset(Dataset):
             waveform, sr = librosa.load(file_path, sr=sample_rate, mono=True)
             waveform = torch.tensor(waveform).unsqueeze(0)
             num_samples = waveform.shape[1]
-            waveform = waveform[:, :num_samples - (num_samples % self._chunk_size)]
+            waveform = waveform[:, : num_samples - (num_samples % self._chunk_size)]
             chunks = waveform.view(-1, chunk_size)
             self._data.extend(chunks)
 
@@ -77,7 +77,7 @@ def performSAE(output, sae, sae_diff, bottlneck):
 
 
 def getDevice():
-    return torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def prepareModel(path: str, device: str):
@@ -88,8 +88,13 @@ def prepareModel(path: str, device: str):
 
 
 def createDataloader(dataset, shuffle: bool):
-    return DataLoader(dataset, batch_size=16, shuffle=shuffle, pin_memory=True if torch.cuda.is_available() else
-                      False, generator=torch.Generator().manual_seed(42))
+    return DataLoader(
+        dataset,
+        batch_size=16,
+        shuffle=shuffle,
+        pin_memory=True if torch.cuda.is_available() else False,
+        generator=torch.Generator().manual_seed(42),
+    )
 
 
 def prepareDataloaders(audio_dir: str):
@@ -110,20 +115,35 @@ def prepareSAE(model, train_dl: DataLoader, device: str, activation, input_dim: 
 
 
 def sae_loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef: float):
-    return torch.norm(sae_diff[-1][0]-sae_diff[-1][1]) + a_coef*torch.norm(bottlneck[-1], p=1)
+    return torch.norm(sae_diff[-1][0] - sae_diff[-1][1]) + a_coef * torch.norm(bottlneck[-1], p=1)
 
 
-def train(model, sae: nn.Module, hiperparams: dict, train_dl: list[torch.Tensor], val_dl: list[torch.Tensor],
-          device: str,
-          optimizer: torch.optim.Optimizer):
+def train(
+    model,
+    sae: nn.Module,
+    hiperparams: dict,
+    train_dl: list[torch.Tensor],
+    val_dl: list[torch.Tensor],
+    device: str,
+    optimizer: torch.optim.Optimizer,
+):
     with tqdm.tqdm(total=hiperparams["epochs"]) as pbar:
         for epoch in range(hiperparams["epochs"]):
             sae.train()
-            hiperparams["loss_params"]["sae_diff"], hiperparams["loss_params"]["bottlneck"], total_loss = [], [], 0
+            (
+                hiperparams["loss_params"]["sae_diff"],
+                hiperparams["loss_params"]["bottlneck"],
+                total_loss,
+            ) = [], [], 0
             for batch in train_dl:
                 training_batch = batch.to(device).detach()
                 output = hiperparams["activation"](model, training_batch)
-                performSAE(output, sae, hiperparams["loss_params"]["sae_diff"], hiperparams["loss_params"]["bottlneck"])
+                performSAE(
+                    output,
+                    sae,
+                    hiperparams["loss_params"]["sae_diff"],
+                    hiperparams["loss_params"]["bottlneck"],
+                )
                 loss = hiperparams["loss"](**hiperparams["loss_params"])
                 total_loss += loss.item()
                 optimizer.zero_grad()
@@ -131,18 +151,31 @@ def train(model, sae: nn.Module, hiperparams: dict, train_dl: list[torch.Tensor]
                 optimizer.step()
             sae.eval()
             with torch.no_grad():
-                hiperparams["loss_params"]["sae_diff"], hiperparams["loss_params"]["bottlneck"], val_loss = [], [], 0
+                (
+                    hiperparams["loss_params"]["sae_diff"],
+                    hiperparams["loss_params"]["bottlneck"],
+                    val_loss,
+                ) = [], [], 0
                 for batch in val_dl:
                     training_batch = batch.to(device).detach()
                     output = hiperparams["activation"](model, training_batch)
-                    performSAE(output, sae, hiperparams["loss_params"]["sae_diff"],
-                               hiperparams["loss_params"]["bottlneck"])
+                    performSAE(
+                        output,
+                        sae,
+                        hiperparams["loss_params"]["sae_diff"],
+                        hiperparams["loss_params"]["bottlneck"],
+                    )
                     val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
-            pbar.set_postfix_str(f'epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}')
+            pbar.set_postfix_str(f"epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}")
             pbar.update(1)
 
 
-def experiment(model_path: str, audio_folder_path: str, hiperparams: dict, sae_input_channels: int | None = None):
+def experiment(
+    model_path: str,
+    audio_folder_path: str,
+    hiperparams: dict,
+    sae_input_channels: int | None = None,
+):
     DEVICE = getDevice()
     model = prepareModel(model_path, DEVICE)
     train_dl, val_dl = prepareDataloaders(audio_folder_path)

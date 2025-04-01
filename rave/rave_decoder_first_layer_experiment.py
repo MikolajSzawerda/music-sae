@@ -37,13 +37,22 @@ def getActivation(model, training_batch):
 
 
 def prepareTrainingHiperparams():
-    hiperparams = {"loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 170, "lr": 1e-3, "activation": getActivation}
+    hiperparams = {
+        "loss": sae_loss,
+        "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
+        "epochs": 170,
+        "lr": 1e-3,
+        "activation": getActivation,
+    }
     return hiperparams
 
 
 def main():
-    experiment(model_path="./darbouka_onnx.ts", audio_folder_path="./", hiperparams=prepareTrainingHiperparams())
+    experiment(
+        model_path="./darbouka_onnx.ts",
+        audio_folder_path="./",
+        hiperparams=prepareTrainingHiperparams(),
+    )
 
 
 if __name__ == "__main__":
