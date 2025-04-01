@@ -19,3 +19,6 @@
 [submodule "dependencies/fadtk"]
 	path = dependencies/fadtk
 	url = https://github.com/microsoft/fadtk.git
+[submodule "dependencies/Yue"]
+	path = dependencies/YuE
+	url = https://github.com/multimodal-art-projection/YuE.git
