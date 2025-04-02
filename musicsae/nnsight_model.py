@@ -91,7 +91,7 @@ class MusicActivationBuffer(ActivationBuffer):
     def text_batch(self, batch_size=None) -> list[str]:
         batch_size = batch_size if batch_size else self.refresh_batch_size
         try:
-            return next(self.data_loader)
+            return next(self.data_loader)[self.data_column]
         except StopIteration:
             self.data_loader = iter(self.data.batch(batch_size))
 
