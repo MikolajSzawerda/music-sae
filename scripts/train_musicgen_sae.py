@@ -90,6 +90,8 @@ def main(args: TrainScriptConfig):
                 trainer_configs=[trainer_cfg],
                 steps=trainer_cfg["steps"],
                 save_dir=MODELS_DIR / "musicgen-sae",
+                use_wandb=True,
+                wandb_project="musicgen-sae",
             )
             ...
 
