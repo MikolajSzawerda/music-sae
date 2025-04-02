@@ -80,13 +80,24 @@ class MusicGenLanguageModel(LanguageModel):
 
 class MusicActivationBuffer(ActivationBuffer):
     def __init__(
-        self, data: Dataset, model: MusicGenLanguageModel, data_column: str, max_tokens_gen: int = 255, *args, **kwargs
+        self,
+        data: Dataset,
+        model: MusicGenLanguageModel,
+        data_column: str,
+        sae_device: str,
+        max_tokens_gen: int = 255,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, model=model, data=data, **kwargs)
         self.max_tokens_gen = max_tokens_gen
         self.model: MusicGenLanguageModel = model
         self.data_loader = iter(self.data.batch(self.refresh_batch_size))
         self.data_column = data_column
+        self.sae_device = sae_device
+
+    def __next__(self):
+        return super().__next__().to(self.sae_device)
 
     def text_batch(self, batch_size=None) -> list[str]:
         batch_size = batch_size if batch_size else self.refresh_batch_size
@@ -95,6 +106,7 @@ class MusicActivationBuffer(ActivationBuffer):
         except StopIteration:
             self.data_loader = iter(self.data.batch(batch_size))
 
+    @torch.no_grad()
     def refresh(self):
         gc.collect()
         torch.cuda.empty_cache()

@@ -6,8 +6,6 @@ from musicsae.nnsight_model import MusicGenLanguageModel
 from dataclasses import dataclass, field
 import hydra
 from hydra.core.config_store import ConfigStore
-from transformers import set_seed
-from accelerate import PartialState
 from src.project_config import MODELS_DIR
 
 
@@ -33,6 +31,7 @@ class TrainScriptConfig:
     seed: int = 42
     sae_size_multiplier: int = 16
     text_batch_size: int = 10
+    log_steps: int = 30
 
 
 cs = ConfigStore.instance()
@@ -47,53 +46,59 @@ def get_ds(cfg: TrainScriptConfig) -> Dataset:
 
 @hydra.main(version_base=None, config_path="../conf/musicgen-sae", config_name="config")
 def main(args: TrainScriptConfig):
-    set_seed(args.seed)
+    # set_seed(args.seed)
+    if args.device == "cuda":
+        sae_device, data_device = "cuda:0", "cuda:1"
+    else:
+        sae_device, data_device = args.device, args.device
     ds = get_ds(args)
-    distributed_state = PartialState()
-    nn_model = MusicGenLanguageModel(f"facebook/musicgen-{args.model_name}", device_map=args.device)
-    with nn_model.generate("Hello world!", max_new_tokens=1):
-        ...
-    nn_model.device_map = distributed_state.device
-    nn_model.to(distributed_state.device)
-    with distributed_state.split_between_processes(list(args.ablation_layers)) as job_idxs:
-        for layer_id in job_idxs:
-            layer = nn_model.decoder.model.decoder.layers[layer_id]
-            activation_dim = nn_model.config.decoder.hidden_size  # output dimension of the MLP
-            dictionary_size = args.sae_size_multiplier * activation_dim
-            buffer = MusicActivationBuffer(
-                data=ds,
-                data_column=args.dataset.column,
-                model=nn_model,
-                submodule=layer,
-                d_submodule=activation_dim,
-                n_ctxs=args.activation_buffer_size // args.max_gen_num_tokens,
-                ctx_len=args.max_gen_num_tokens,
-                refresh_batch_size=args.text_batch_size,
-                out_batch_size=args.activation_batch_size,
-                device=args.device,
-            )
-            trainer_cfg = {
-                "trainer": TopKTrainer,
-                "dict_class": AutoEncoderTopK,
-                "activation_dim": activation_dim,
-                "dict_size": dictionary_size,
-                "lr": 1e-3,
-                "device": args.device,
-                "steps": args.max_steps,
-                "layer": layer_id,
-                "lm_name": f"musicgen-{args.model_name}",
-                "warmup_steps": args.warmup_steps,
-                "k": args.top_k,
-            }
-            trainSAE(
-                data=buffer,
-                trainer_configs=[trainer_cfg],
-                steps=trainer_cfg["steps"],
-                save_dir=MODELS_DIR / "musicgen-sae",
-                use_wandb=True,
-                wandb_project="musicgen-sae",
-            )
+    for layer_id in list(args.ablation_layers):
+        nn_model = MusicGenLanguageModel(f"facebook/musicgen-{args.model_name}", device_map=sae_device)
+        with nn_model.generate("Hello world!", max_new_tokens=1):
             ...
+        nn_model.device_map = data_device
+        nn_model.to(data_device)
+        layer = nn_model.decoder.model.decoder.layers[layer_id]
+        activation_dim = nn_model.config.decoder.hidden_size  # output dimension of the MLP
+        dictionary_size = args.sae_size_multiplier * activation_dim
+        buffer = MusicActivationBuffer(
+            data=ds,
+            data_column=args.dataset.column,
+            model=nn_model,
+            submodule=layer,
+            d_submodule=activation_dim,
+            n_ctxs=args.activation_buffer_size // args.max_gen_num_tokens,
+            ctx_len=args.max_gen_num_tokens,
+            refresh_batch_size=args.text_batch_size,
+            out_batch_size=args.activation_batch_size,
+            device=data_device,
+            sae_device=sae_device,
+        )
+        buffer.refresh()
+        trainer_cfg = {
+            "trainer": TopKTrainer,
+            "dict_class": AutoEncoderTopK,
+            "activation_dim": activation_dim,
+            "dict_size": dictionary_size,
+            "lr": 1e-3,
+            "device": sae_device,
+            "steps": args.max_steps,
+            "layer": layer_id,
+            "lm_name": f"musicgen-{args.model_name}",
+            "warmup_steps": args.warmup_steps,
+            "k": args.top_k,
+            "wandb_name": str(layer_id),
+        }
+        trainSAE(
+            data=buffer,
+            trainer_configs=[trainer_cfg],
+            steps=trainer_cfg["steps"],
+            save_dir=MODELS_DIR / "musicgen-sae" / str(layer_id),
+            use_wandb=True,
+            wandb_project="musicgen-sae",
+            log_steps=args.log_steps,
+            normalize_activations=True,
+        )
 
 
 if __name__ == "__main__":

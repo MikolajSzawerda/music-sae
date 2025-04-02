@@ -1874,7 +1874,7 @@ requires-dist = [
     { name = "simple-parsing", specifier = ">=0.1.7,<0.2" },
     { name = "soundfile", specifier = ">=0.13.1,<0.14" },
     { name = "toolz", specifier = ">=1.0.0,<2" },
-    { name = "torchaudio", specifier = ">=2.6.0,<3" },
+    { name = "torchaudio", specifier = "==2.6.0" },
     { name = "tqdm", specifier = ">=4.67.1,<5" },
     { name = "transformers", specifier = ">=4.50.0,<5" },
     { name = "wandb", specifier = "==0.19.8" },

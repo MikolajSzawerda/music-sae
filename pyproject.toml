@@ -14,7 +14,7 @@ dependencies = [
     "soundfile>=0.13.1,<0.14",
     "jupytext>=1.16.7,<2",
     "dotenv>=0.9.9,<0.10",
-    "torchaudio>=2.6.0,<3",
+    "torchaudio==2.6.0",
     "simple-parsing>=0.1.7,<0.2",
     "seaborn>=0.13.2,<0.14",
     "toolz>=1.0.0,<2",
