@@ -1,17 +1,16 @@
 dataset:
   name: amaai-lab/MusicBench
-  split: test
+  split: train
   column: main_caption
 model_name: small
 device: cuda
-batch_size: 10
-music_per_prompt: 1
 ablation_layers: [16]
 max_gen_num_tokens: 255
-max_steps: 1000
-activation_buffer_size: 100
-activation_batch_size: 10
-warmup_steps: 10
+max_steps: 10000000
+activation_buffer_size: 2550
+activation_batch_size: 100
+text_batch_size: 10
+warmup_steps: 1000
 top_k: 5
 seed: 42
 sae_size_multiplier: 16

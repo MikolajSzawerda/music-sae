@@ -23,8 +23,6 @@ class TrainScriptConfig:
     dataset: TrainDatasetScriptConfig
     model_name: str = "small"
     device: str = "cuda"
-    batch_size: int = 10
-    music_per_prompt: int = 1
     ablation_layers: list[int] = field(default_factory=list)
     max_gen_num_tokens: int = 255
     max_steps: int = 1000
@@ -34,6 +32,7 @@ class TrainScriptConfig:
     top_k: int = 5
     seed: int = 42
     sae_size_multiplier: int = 16
+    text_batch_size: int = 10
 
 
 cs = ConfigStore.instance()
@@ -63,12 +62,13 @@ def main(args: TrainScriptConfig):
             dictionary_size = args.sae_size_multiplier * activation_dim
             buffer = MusicActivationBuffer(
                 data=ds,
+                data_column=args.dataset.column,
                 model=nn_model,
                 submodule=layer,
                 d_submodule=activation_dim,
                 n_ctxs=args.activation_buffer_size // args.max_gen_num_tokens,
                 ctx_len=args.max_gen_num_tokens,
-                refresh_batch_size=args.activation_buffer_size,
+                refresh_batch_size=args.text_batch_size,
                 out_batch_size=args.activation_batch_size,
                 device=args.device,
             )
