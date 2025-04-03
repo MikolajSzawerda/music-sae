@@ -1,0 +1,13 @@
+dataset:
+  name: amaai-lab/MusicBench
+  split: train
+  column: main_caption
+  max_rows: 50000
+model_name: medium
+device: cuda
+layers: [3, 16]
+max_gen_num_tokens: 500
+collect_batch_size: 40
+seed: 42
+model_sampling_rate: 32000
+max_examples_per_shard: 1000000

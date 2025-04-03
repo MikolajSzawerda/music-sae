@@ -26,6 +26,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 DATA_DIR = PROJ_ROOT / "data"
+MODELS_DIR = PROJ_ROOT / "models"
 RAW_DATA_DIR = DATA_DIR / "raw"
 INPUT_DATA_DIR = DATA_DIR / "input"
 OUTPUT_DATA_DIR = DATA_DIR / "output"
