@@ -13,7 +13,8 @@ dependencies = [
     "ffmpeg (>=1.4,<2.0)",
     "librosa (>=0.11.0,<0.12.0)",
     "argparse (>=1.4.0,<2.0.0)",
-    "nnsight @ file:///home/mateusz/Python/music-sae/dependencies/nnsight"
+    "nnsight @ file:///home/mateusz/Python/music-sae/dependencies/nnsight",
+    "matplotlib (>=3.10.1,<4.0.0)"
 ]
 
 [tool.poetry]

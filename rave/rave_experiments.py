@@ -31,7 +31,7 @@ import librosa
 
 
 class AudioChunksDataset(Dataset):
-    def __init__(self, audio_dir, chunk_size=513, sample_rate=44100):
+    def __init__(self, audio_dir, chunk_size=513, sample_rate=48000):
         self.audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
         self.sample_rate = sample_rate
         self._chunk_size = chunk_size

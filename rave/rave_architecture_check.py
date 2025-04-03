@@ -41,6 +41,7 @@ def main():
         "Wymiary parametrów pierwszej warstwy sieci",
         list(structure[0]["model"].named_parameters())[0][1].shape,
     )
+    
 
 
 if __name__ == "__main__":
