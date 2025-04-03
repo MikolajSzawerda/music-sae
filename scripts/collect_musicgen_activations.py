@@ -9,6 +9,8 @@ from src.project_config import INPUT_DATA_DIR
 import torchaudio
 from datasets import Features, Array2D
 from datasets.arrow_writer import ArrowWriter
+import tqdm
+import torch
 
 
 @dataclass
@@ -46,13 +48,13 @@ def add_audio_to_sample(model_sr, sample):
 
 
 def get_batches(cfg: CollectScriptConfig) -> Dataset:
-    prompts_ds = load_dataset(cfg.dataset.name, split=cfg.dataset.split).select_columns([cfg.dataset.column])
+    prompts_ds = load_dataset(cfg.dataset.name, split=cfg.dataset.split)
     prompts_ds = prompts_ds.shuffle(cfg.seed)
     prompts_ds = prompts_ds.select(range(cfg.dataset.max_rows))
     prompts_ds = prompts_ds.map(lambda x: add_audio_to_sample(cfg.model_sampling_rate, x)).select_columns(
         [cfg.dataset.column, "audio_tensor", "sr"]
     )
-    return prompts_ds.batch(cfg.collect_batch_size)
+    return prompts_ds
 
 
 @hydra.main(version_base=None, config_path="../conf/collect", config_name="config")
@@ -71,7 +73,7 @@ def main(args: CollectScriptConfig):
         for layer_id in job_idxs:
             layer = nn_model.decoder.model.decoder.layers[layer_id]
             activation_dim = nn_model.config.decoder.hidden_size
-            features = Features({"activation": Array2D(shape=(activation_dim, activation_dim), dtype="float32")})
+            features = Features({"activation": Array2D(shape=(1, activation_dim), dtype="float32")})
             path = (
                 INPUT_DATA_DIR
                 / "activation"
@@ -84,7 +86,12 @@ def main(args: CollectScriptConfig):
             shard_id = 0
             example_counts = 0
             writer = ArrowWriter(features=features, path=path / f"data-{shard_id:05d}-of-99999.arrow")
-            for batch in ds:
+            ds_iter = ds.iter(batch_size=args.collect_batch_size)
+            for batch in (
+                tqdm(tqdm.tqdm(ds_iter, total=len(ds) // args.collect_batch_size))
+                if distributed_state.is_main_process and distributed_state.local_process_index == 0
+                else ds_iter
+            ):
                 inputs = processor(
                     audio=batch["audio_tensor"],
                     sampling_rate=32000,
@@ -92,11 +99,17 @@ def main(args: CollectScriptConfig):
                     padding=True,
                     return_tensors="pt",
                 )
-                with nn_model.trace(inputs):
-                    activations = layer.output.save().view(-1, activation_dim)
-                writer.write({"activation": activations})
+                with torch.no_grad():
+                    with nn_model.trace(
+                        inputs, invoker_args={"truncation": True, "max_length": args.max_gen_num_tokens}
+                    ):
+                        activations = layer.output[0].save()
+                        layer.output.stop()
+                activations = activations.view(-1, activation_dim).detach().cpu()
+                for act in activations:
+                    writer.write({"activation": act.unsqueeze(0).numpy()})
                 example_counts += activations.shape[0]
-                if example_counts > args.max_examples_per_shard:
+                if example_counts >= args.max_examples_per_shard:
                     writer.finalize()
                     shard_id += 1
                     example_counts = 0
