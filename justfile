@@ -24,4 +24,5 @@ musicgen-ablation-relative-fad generations_dir score_path:
 
 prepare-music-bench:
 	wget -O data/raw/MusicBench.tar.gz https://huggingface.co/datasets/amaai-lab/MusicBench/resolve/main/MusicBench.tar.gz
+	mkdir data/input/music-bench
 	tar -xzf data/raw/MusicBench.tar.gz -C data/input/music-bench/
