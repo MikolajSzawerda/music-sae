@@ -88,7 +88,7 @@ def main(args: CollectScriptConfig):
             writer = ArrowWriter(features=features, path=path / f"data-{shard_id:05d}-of-99999.arrow")
             ds_iter = ds.iter(batch_size=args.collect_batch_size)
             for batch in (
-                tqdm(tqdm.tqdm(ds_iter, total=len(ds) // args.collect_batch_size))
+                tqdm.tqdm(ds_iter, total=len(ds) // args.collect_batch_size)
                 if distributed_state.is_main_process and distributed_state.local_process_index == 0
                 else ds_iter
             ):
