@@ -4,12 +4,12 @@ dataset:
   column: main_caption
 model_name: medium
 device: cuda
-ablation_layers: [3]
+ablation_layers: [16]
 max_gen_num_tokens: 200
-max_steps: 600
-log_steps: 100
+max_steps: 6000
+log_steps: 300
 activation_buffer_size: 6000
-activation_batch_size: 500
+activation_batch_size: 1000
 text_batch_size: 2
 warmup_steps: 20
 top_k: 32

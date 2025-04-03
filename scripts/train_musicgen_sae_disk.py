@@ -45,7 +45,6 @@ def collate_fn(batch, device):
 
 @hydra.main(version_base=None, config_path="../conf/musicgen-sae", config_name="config")
 def main(args: TrainScriptConfig):
-    # set_seed(args.seed)
     for layer_id in list(args.ablation_layers):
         ds = load_dataset(
             "arrow",
