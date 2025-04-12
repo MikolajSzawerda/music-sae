@@ -71,13 +71,14 @@ def gatherActivationPatches(activation_funcs_dict: dict, dataloader: torch.utils
     return activations_patches_dict
 
 
-def plot(activation_patches_dict: dict, tested_param: str, param_modification_factor):
+def plot(activation_patches_dict: dict, tested_param: str, param_modification_factor, music_category: str):
+    plt.figure(figsize=(19.2, 11))
     plt.bar(activation_patches_dict.keys(), activation_patches_dict.values(), color='skyblue')
     plt.xlabel("Layers")
     plt.ylabel(f"Sensivity to modification (vector norm value): {tested_param}")
-    plt.title(f"Sensivity to modification: {tested_param}, {param_modification_factor}")
+    plt.title(f"Sensivity to modification on {music_category} dataset: {tested_param}, {param_modification_factor}")
     plt.xticks(rotation=45)
-    plt.show()
+    plt.savefig(f"./diagrams/Sensivity_{tested_param}_{param_modification_factor}_{music_category}.jpg")
     plt.clf()
 
 
@@ -87,6 +88,7 @@ def getCMDArgs():
     parser.add_argument("tested_parameter", type=str,
                         help="Parameter used for layers' sensivity calculation (pitch or tempo)")
     parser.add_argument("params_file", type=str, help="Path to the file containing batch modification args")
+    parser.add_argument("audio_category", type=str, help="Music category")
     args = parser.parse_args()
     return args
 
@@ -118,8 +120,8 @@ def readParamsFile(filename: str):
 
 
 def getTestedParamValueDescription(tested_param: str, params_dict: dict):
-    values_dict = {"pitch": f"pitch modification steps (one step is equal to semitone): \
-                              {params_dict.get('pitch_modification_steps', -2)}",
+    values_dict = {"pitch": f"steps (one step is equal to semitone): \
+{params_dict.get('pitch_modification_steps', -2)}",
                    "tempo": f"tempo modification scale: {params_dict.get('rate', 0.75)}"}
     return values_dict[tested_param]
 
@@ -127,8 +129,8 @@ def getTestedParamValueDescription(tested_param: str, params_dict: dict):
 def main():
     args = getCMDArgs()
     DEVICE = getDevice()
-    dataset = AudioChunksDataset(args.audio_dir)
-    dataloader = createDataloader(dataset, shuffle=True)
+    dataset = AudioChunksDataset(args.audio_dir, max_length=1600)
+    dataloader = createDataloader(dataset, shuffle=False)
     model = prepareModel("darbouka_onnx.ts", DEVICE)
     activation_funcs_dict = {"darbouka_encoder": getActivationEncoderLayer,
                              "darbouka_decoder": getActivationDecoderLayer}
@@ -138,7 +140,7 @@ def main():
     activations_patches_dict = gatherActivationPatches(activation_funcs_dict, dataloader, model, DEVICE, batch_mod_func,
                                                        batch_mod_func_args)
     tested_param_value_desc = getTestedParamValueDescription(args.tested_parameter, params_dict)
-    plot(activations_patches_dict, args.tested_parameter, tested_param_value_desc)
+    plot(activations_patches_dict, args.tested_parameter, tested_param_value_desc, args.audio_category)
 
 
 if __name__ == "__main__":

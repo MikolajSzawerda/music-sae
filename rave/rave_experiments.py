@@ -31,7 +31,7 @@ import librosa
 
 
 class AudioChunksDataset(Dataset):
-    def __init__(self, audio_dir, chunk_size=513, sample_rate=48000):
+    def __init__(self, audio_dir, chunk_size=513, sample_rate=48000, max_length: int = float("inf")):
         self.audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
         self.sample_rate = sample_rate
         self._chunk_size = chunk_size
@@ -44,6 +44,10 @@ class AudioChunksDataset(Dataset):
             waveform = waveform[:, : num_samples - (num_samples % self._chunk_size)]
             chunks = waveform.view(-1, chunk_size)
             self._data.extend(chunks)
+            if len(self._data) >= max_length:
+                break
+        if max_length != float("inf"):
+            self._data = self._data[:max_length]
 
     def __len__(self):
         return len(self._data)
