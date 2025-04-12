@@ -16,6 +16,7 @@ class TrainDatasetScriptConfig:
     name: str = "amaai-lab/MusicBench"
     split: str = "test"
     column: str = "main_caption"
+    local: bool = True
 
 
 @dataclass
@@ -51,13 +52,20 @@ def infinite_dataloader(loader):
 @hydra.main(version_base=None, config_path="../conf/musicgen-sae", config_name="config")
 def main(args: TrainScriptConfig):
     for layer_id in list(args.ablation_layers):
-        path = INPUT_DATA_DIR / "activation" / args.model_name / "MusicBench" / str(layer_id) / args.dataset.split
-        ds = load_dataset(
-            "arrow",
-            data_files=[str(path / f"data-{shard_id:05d}-of-99999.arrow") for shard_id in range(23)],
-            streaming=True,
-            split="train",
-        )
+        if args.dataset.local:
+            path = INPUT_DATA_DIR / "activation" / args.model_name / "MusicBench" / str(layer_id) / args.dataset.split
+            ds = load_dataset(
+                "arrow",
+                data_files=[str(path / f"data-{shard_id:05d}-of-99999.arrow") for shard_id in range(23)],
+                streaming=True,
+                split="train",
+            )
+        else:
+            ds = load_dataset(
+                args.dataset.name,
+                streaming=True,
+                split="train",
+            )
         ds = ds.shuffle(buffer_size=args.activation_batch_size, seed=args.seed)
         dl = DataLoader(
             ds, batch_size=args.activation_batch_size, num_workers=8, collate_fn=lambda x: collate_fn(x, args.device)

@@ -1,8 +1,8 @@
 dataset:
-  name: amaai-lab/MusicBench
+  name: mszawerd/medium-sae-musicgen
   split: train
   column: main_caption
-  local: True
+  local: False
 model_name: medium
 device: cuda
 ablation_layers: [16]
