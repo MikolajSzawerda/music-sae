@@ -1,3 +1,9 @@
+# rave
+rave/__pycache__/*
+rave/audio/*
+rave/*.txt
+rave/.vscode/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

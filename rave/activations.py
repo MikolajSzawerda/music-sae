@@ -9,20 +9,23 @@ class BadLayerNameException(Exception):
         super.__init__("Podano nieprawidłową nazwę warstwy do zbierania aktywacji")
 
 
-def prepareLatentTensor(model, output: torch.Tensor):
+def prepareLatentTensor(model, output: torch.Tensor, device: str = None):
     stereo = model.stereo
     if stereo:
-        z0 = torch.cat([output, output])
+        z0 = torch.cat([output, output]).detach()
     else:
-        z0 = output
+        z0 = output.detach()
     mode = model.mode
     if mode == "variational":
         _0 = (torch.Tensor.size(z0))[0]
         full_latent_size = model.full_latent_size
         latent_size = model.latent_size
-        _1 = torch.sub(full_latent_size, latent_size)
+        _1 = torch.sub(full_latent_size, latent_size).detach()
         noise = torch.randn([_0, _1, (torch.Tensor.size(z0))[-1]])
-        noise = noise.to(getDevice())
+        if device:
+            noise = noise.to(device)
+        else:
+            noise = noise.to(getDevice())
         z2 = torch.cat([z0, noise], 1)
         latent_pca = model.latent_pca
         _2 = torch.unsqueeze(latent_pca, -1)
@@ -40,22 +43,22 @@ def iterateThroughNet(net, output: torch.Tensor, layer_name: str):
         output = module(output).detach()
         if name == layer_name:
             break
-    return output
+    return output.detach()
 
 
 def getActivationEncoderLayer(model, batch, layer_name: str):
     encoder_net = list(list(list(model.encoder.named_children())[0][1].named_children())[0][1].named_children())
     output = model.pqmf(batch).detach()
     output = iterateThroughNet(encoder_net, output, layer_name)
-    return output
+    return output.detach()
 
 
 def getActivationDecoderLayer(model, batch, layer_name: str):
     output = model.encode(batch).detach()
-    output = prepareLatentTensor(model, output)
+    output = prepareLatentTensor(model, output, device=next(model.parameters()).device)
     decoder_net = list(list(model.decoder.named_children())[0][1].named_children())
     output = iterateThroughNet(decoder_net, output, layer_name)
-    return output
+    return output.detach()
 
 
 def getCMDArgs():

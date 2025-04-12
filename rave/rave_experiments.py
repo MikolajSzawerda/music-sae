@@ -156,7 +156,7 @@ def train(
 
 def prepareTrainingHiperparams():
     hiperparams = {"loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 500, "lr": 1e-3}
+                   "epochs": 1500, "lr": 0.000001}
     return hiperparams
 
 
