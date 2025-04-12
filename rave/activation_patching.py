@@ -1,4 +1,5 @@
-from activations import getDevice, AudioChunksDataset, createDataloader, prepareModel, getActivationEncoderLayer, getActivationDecoderLayer
+from activations import getDevice, AudioChunksDataset, createDataloader, prepareModel, getActivationEncoderLayer
+from activations import getActivationDecoderLayer
 import librosa
 import tqdm
 import numpy as np
@@ -9,7 +10,9 @@ import argparse
 
 def changePitch(batch, sr: int, pitch_modification_steps: int, device: str, n_fft: int):
     batch_with_changed_pitch = np.stack([
-                                    librosa.effects.pitch_shift(audio.squeeze(0).cpu().numpy(), sr=sr, n_steps=pitch_modification_steps, **{"n_fft": n_fft}).reshape(1, -1)
+                                    librosa.effects.pitch_shift(audio.squeeze(0).cpu().numpy(), sr=sr,
+                                                                n_steps=pitch_modification_steps,
+                                                                **{"n_fft": n_fft}).reshape(1, -1)
                                     for audio in batch
                                 ])
     batch_with_changed_pitch = torch.Tensor(batch_with_changed_pitch)
@@ -19,7 +22,9 @@ def changePitch(batch, sr: int, pitch_modification_steps: int, device: str, n_ff
 
 def changeTempo(batch, rate: float, device: str, n_fft: int):
     batch_with_changed_tempo = np.stack([
-                                    librosa.util.fix_length(librosa.effects.time_stretch(audio.squeeze(0).cpu().numpy(), rate=rate, **{"n_fft": n_fft}), size=513).reshape(1, -1)
+                                    librosa.util.fix_length(librosa.effects.time_stretch(audio.squeeze(0).cpu().numpy(),
+                                                                                         rate=rate, **{"n_fft": n_fft}),
+                                                            size=513).reshape(1, -1)
                                     for audio in batch
                                 ])
     batch_with_changed_tempo = torch.Tensor(batch_with_changed_tempo)
@@ -27,7 +32,8 @@ def changeTempo(batch, rate: float, device: str, n_fft: int):
     return batch_with_changed_tempo
 
 
-def gatherActivationPatch(activation_funcs_dict: dict, activation_func_params: dict, batch, activation_layers_name: str, layer_number: int, device: str, batch_mod_func, batch_mod_func_args: dict):
+def gatherActivationPatch(activation_funcs_dict: dict, activation_func_params: dict, batch, activation_layers_name: str,
+                          layer_number: int, device: str, batch_mod_func, batch_mod_func_args: dict):
     activation_func_params["layer_name"] = str(layer_number)
     activation_func_params["batch"] = batch.detach()
     output = activation_funcs_dict[activation_layers_name](**activation_func_params)
@@ -38,7 +44,8 @@ def gatherActivationPatch(activation_funcs_dict: dict, activation_func_params: d
     return torch.norm(modified_pitch_output - output).item()
 
 
-def gatherActivationPatches(activation_funcs_dict: dict, dataloader: torch.utils.data.DataLoader, model, device: str, batch_mod_func, batch_mod_func_args):
+def gatherActivationPatches(activation_funcs_dict: dict, dataloader: torch.utils.data.DataLoader, model, device: str,
+                            batch_mod_func, batch_mod_func_args):
     activations_patches_dict = {}
     with tqdm.tqdm(total=len(dataloader)) as pbar:
         with torch.no_grad():
@@ -49,12 +56,16 @@ def gatherActivationPatches(activation_funcs_dict: dict, dataloader: torch.utils
                     base_name = "encoder_layer"
                     if (base_name + str(encoder_layer_number) not in activations_patches_dict.keys()):
                         activations_patches_dict[base_name + str(encoder_layer_number)] = 0
-                    activations_patches_dict[base_name + str(encoder_layer_number)] += gatherActivationPatch(activation_funcs_dict, activation_func_params, batch, "darbouka_encoder", encoder_layer_number, device, batch_mod_func, batch_mod_func_args)
+                    activations_patches_dict[base_name + str(encoder_layer_number)] += \
+                        gatherActivationPatch(activation_funcs_dict, activation_func_params, batch, "darbouka_encoder",
+                                              encoder_layer_number, device, batch_mod_func, batch_mod_func_args)
                 for decoder_layer_number in range(9):
                     base_name = "decoder_layer"
                     if (base_name + str(decoder_layer_number) not in activations_patches_dict.keys()):
                         activations_patches_dict[base_name + str(decoder_layer_number)] = 0
-                    activations_patches_dict[base_name + str(decoder_layer_number)] += gatherActivationPatch(activation_funcs_dict, activation_func_params, batch, "darbouka_decoder", decoder_layer_number, device, batch_mod_func, batch_mod_func_args)
+                    activations_patches_dict[base_name + str(decoder_layer_number)] += \
+                        gatherActivationPatch(activation_funcs_dict, activation_func_params, batch, "darbouka_decoder",
+                                              decoder_layer_number, device, batch_mod_func, batch_mod_func_args)
                 pbar.set_postfix_str(f"Batch number: {number}")
                 pbar.update(1)
     return activations_patches_dict
@@ -73,7 +84,8 @@ def plot(activation_patches_dict: dict, tested_param: str, param_modification_fa
 def getCMDArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument("audio_dir", type=str, help="Path to the directory containing audio input")
-    parser.add_argument("tested_parameter", type=str, help="Parameter used for layers' sensivity calculation (pitch or tempo)")
+    parser.add_argument("tested_parameter", type=str,
+                        help="Parameter used for layers' sensivity calculation (pitch or tempo)")
     parser.add_argument("params_file", type=str, help="Path to the file containing batch modification args")
     args = parser.parse_args()
     return args
@@ -85,7 +97,9 @@ def chooseBatchModification(tested_parameter: str):
 
 
 def chooseBatchModificationArgs(tested_param: str, params_dict: dict):
-    choice_dict = {"pitch": {"sr": params_dict.get("sr", 48000), "pitch_modification_steps": params_dict.get("pitch_modification_steps", -2), "device": getDevice(), "n_fft": 256},
+    choice_dict = {"pitch": {"sr": params_dict.get("sr", 48000),
+                             "pitch_modification_steps": params_dict.get("pitch_modification_steps", -2),
+                             "device": getDevice(), "n_fft": 256},
                    "tempo": {"rate": params_dict.get("rate", 0.75), "device": getDevice(), "n_fft": 256}}
     return choice_dict[tested_param]
 
@@ -104,7 +118,8 @@ def readParamsFile(filename: str):
 
 
 def getTestedParamValueDescription(tested_param: str, params_dict: dict):
-    values_dict = {"pitch": f"pitch modification steps (one step is equal to semitone): {params_dict.get('pitch_modification_steps', -2)}",
+    values_dict = {"pitch": f"pitch modification steps (one step is equal to semitone): \
+                              {params_dict.get('pitch_modification_steps', -2)}",
                    "tempo": f"tempo modification scale: {params_dict.get('rate', 0.75)}"}
     return values_dict[tested_param]
 
@@ -120,7 +135,8 @@ def main():
     batch_mod_func = chooseBatchModification(args.tested_parameter)
     params_dict = readParamsFile(args.params_file)
     batch_mod_func_args = chooseBatchModificationArgs(args.tested_parameter, params_dict)
-    activations_patches_dict = gatherActivationPatches(activation_funcs_dict, dataloader, model, DEVICE, batch_mod_func, batch_mod_func_args)
+    activations_patches_dict = gatherActivationPatches(activation_funcs_dict, dataloader, model, DEVICE, batch_mod_func,
+                                                       batch_mod_func_args)
     tested_param_value_desc = getTestedParamValueDescription(args.tested_parameter, params_dict)
     plot(activations_patches_dict, args.tested_parameter, tested_param_value_desc)
 
