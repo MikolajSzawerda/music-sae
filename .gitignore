@@ -98,3 +98,5 @@ target/
 
 dirty_notebooks/
 outputs/
+.ruff_cache
+wandb/
