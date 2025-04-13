@@ -12,15 +12,15 @@ class BadLayerNameException(Exception):
 def prepareLatentTensor(model, output: torch.Tensor, device: str = None):
     stereo = model.stereo
     if stereo:
-        z0 = torch.cat([output, output]).detach()
+        z0 = torch.cat([output, output])
     else:
-        z0 = output.detach()
+        z0 = output
     mode = model.mode
     if mode == "variational":
         _0 = (torch.Tensor.size(z0))[0]
         full_latent_size = model.full_latent_size
         latent_size = model.latent_size
-        _1 = torch.sub(full_latent_size, latent_size).detach()
+        _1 = torch.sub(full_latent_size, latent_size)
         noise = torch.randn([_0, _1, (torch.Tensor.size(z0))[-1]])
         if device:
             noise = noise.to(device)
