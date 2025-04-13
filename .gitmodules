@@ -16,3 +16,6 @@
 [submodule "dependencies/nnsight"]
 	path = dependencies/nnsight
 	url = https://github.com/ndif-team/nnsight.git
+[submodule "dependencies/fadtk"]
+	path = dependencies/fadtk
+	url = https://github.com/MikolajSzawerda/fadtk.git
