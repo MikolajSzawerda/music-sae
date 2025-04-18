@@ -1,4 +1,4 @@
-resample_sr: 16000
+resample_sr: 32000
 seed: 42
 datasets:
   - name: "music_bench_plugin"
@@ -17,3 +17,10 @@ datasets:
     max_rows: 15
     postfix_path: "song-describer"
     with_audio: False
+model_name: medium
+device: cuda
+layers: [3, 16]
+max_gen_num_tokens: 500
+collect_batch_size: 40
+model_sampling_rate: 32000
+max_examples_per_shard: 1000000
