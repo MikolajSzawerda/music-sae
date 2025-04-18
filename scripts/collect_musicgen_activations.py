@@ -1,7 +1,8 @@
 from musicsae.nnsight_model import MusicGenLanguageModel, AutoProcessor
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 import hydra
 from hydra.core.config_store import ConfigStore
+from omegaconf import OmegaConf
 from transformers import set_seed
 from accelerate import PartialState
 from src.project_config import INPUT_DATA_DIR
@@ -46,9 +47,9 @@ def main(args: CollectScriptConfig):
             layer = nn_model.decoder.model.decoder.layers[layer_id]
             activation_dim = nn_model.config.decoder.hidden_size
             features = Features({"activation": Array2D(shape=(1, activation_dim), dtype="float32")})
-            for ds, ds_cfg in get_datasets(asdict(args)):
+            for ds, ds_cfg in get_datasets(OmegaConf.to_container(args, resolve=True)):
                 name, split = ds_cfg["name"], ds_cfg["split"]
-                path = INPUT_DATA_DIR / "activation" / args.model_name / name / str(layer_id) / split
+                path = INPUT_DATA_DIR / "activation-test" / args.model_name / name / str(layer_id) / split
                 path.mkdir(exist_ok=True, parents=True)
                 shard_id, example_counts = 0, 0
                 writer = ArrowWriter(features=features, path=path / f"data-{shard_id:05d}-of-99999.arrow")
