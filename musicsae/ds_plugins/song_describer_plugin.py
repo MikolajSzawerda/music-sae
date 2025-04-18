@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 
 
-def load_and_chunk_audio(audio_path: Path, examples, model_sr=16000, chunk_duration_s=10):
+def load_and_chunk_audio(audio_dir: Path, examples, model_sr=16000, chunk_duration_s=10):
     res = {"audio_tensor": [], "main_caption": []}
     for i, path in enumerate(examples["path"]):
-        audio_path = audio_path / path.replace(".mp3", ".2min.mp3")
+        audio_path = audio_dir / path.replace(".mp3", ".2min.mp3")
         audio_tensor, sr = torchaudio.load(str(audio_path))
         transform = torchaudio.transforms.Resample(orig_freq=sr, new_freq=model_sr)
         audio_resampled = transform(audio_tensor)  # shape: (channels, samples)
@@ -34,15 +34,17 @@ def load_and_chunk_audio(audio_path: Path, examples, model_sr=16000, chunk_durat
 class SongDescriberPlugin(AudioDatasetPlugin):
     name = "song_describer_plugin"
 
-    def __init__(self, resample_sr: int, max_rows: int, seed: int, **kwargs):
+    def __init__(self, resample_sr: int, max_rows: int, max_pre_rows: int, seed: int, **kwargs):
         self.resample_sr = resample_sr
         self.max_rows = max_rows
+        self.max_pre_rows = max_pre_rows
         self.seed = seed
 
     def load(self, split: str = "train", base_dir: Path = None, with_audio: bool = True, **kwargs):
-        ds = load_dataset("csv", data_files=str(base_dir / "song_describer.csv"), split="train")
+        ds = load_dataset("csv", data_files=str(base_dir / "song_describer.csv"), split=split)
         ds = ds.shuffle(self.seed)
         ds = ds.select_columns(["path", "caption"]).rename_column("caption", "main_caption")
+        ds = ds.select(range(min(self.max_pre_rows, len(ds))))
         if with_audio:
             ds = ds.map(
                 lambda x: load_and_chunk_audio(base_dir / "audio" / "audio", x, model_sr=self.resample_sr),

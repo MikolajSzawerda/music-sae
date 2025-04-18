@@ -7,6 +7,13 @@ datasets:
     postfix_path: "music-bench/datashare"
   - name: "song_describer_plugin"
     split: "train"
-    max_rows: 10
+    max_pre_rows: 10
+    max_rows: 15
     postfix_path: "song-describer"
     with_audio: True
+  - name: "song_describer_plugin"
+    split: "train"
+    max_pre_rows: 20
+    max_rows: 15
+    postfix_path: "song-describer"
+    with_audio: False
