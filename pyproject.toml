@@ -37,3 +37,7 @@ dev = [
 
 [tool.uv.sources]
 dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_learning" }
+
+[project.entry-points."ds_plugins"]
+music_bench_plugin = "musicsae.ds_plugins.music_bench_plugin:MusicBenchPlugin"
+song_describer_plugin = "musicsae.ds_plugins.song_describer_plugin:SongDescriberPlugin"

@@ -1,0 +1,12 @@
+resample_sr: 16000
+seed: 42
+datasets:
+  - name: "music_bench_plugin"
+    split: "train"
+    max_rows: 10
+    postfix_path: "music-bench/datashare"
+  - name: "song_describer_plugin"
+    split: "train"
+    max_rows: 10
+    postfix_path: "song-describer"
+    with_audio: True
