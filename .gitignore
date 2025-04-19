@@ -92,3 +92,4 @@ dirty_notebooks/
 outputs/
 .ruff_cache
 wandb/
+sae-ckpts

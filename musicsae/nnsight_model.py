@@ -75,7 +75,7 @@ class MusicGenLanguageModel(LanguageModel):
                 hidden_states = layer.output.save()
                 activations.append(hidden_states[0])
                 self.next()
-        return torch.cat(activations)
+        return torch.cat(activations, dim=1)
 
 
 class MusicActivationBuffer(ActivationBuffer):
