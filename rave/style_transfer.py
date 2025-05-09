@@ -8,13 +8,12 @@ def main():
     model = prepareModel("./darbouka_onnx.ts", device)
     dataset = AudioChunksDataset("./")
     dataloader = createDataloader(dataset, shuffle=False)
-    waveform = torch.Tensor()
     with torch.no_grad():
         for data in dataloader:
             output = model(data)
             audio = [audio_period for audio_period in output]
-            audio.insert(0, waveform)
-            waveform = torch.cat(audio, dim=1)
+            waveform = audio[0]
+            waveform = torch.cat(audio[1:], dim=1)
     torchaudio.save("output.wav", waveform, sample_rate=48000)
 
 
