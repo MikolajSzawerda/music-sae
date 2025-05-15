@@ -2,7 +2,7 @@ import argparse
 import torch
 import numpy as np
 import librosa
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, silhouette_samples
 import sys
 import matplotlib.pyplot as plt
 # from sklearn.manifold import TSNE
@@ -24,7 +24,7 @@ def plotExtractedConcepts(X_embedded, picthes_annotations):
 def annotatePitch(batches: list[np.ndarray]) -> list[float]:
     pitches = []
     for model_input_data in batches:
-        frequency0 = librosa.yin(model_input_data, fmin=46.875, fmax=24000, sr=48000)
+        frequency0 = librosa.yin(model_input_data, fmin=50, fmax=24000, sr=48000, frame_length=2048)
         note = librosa.hz_to_note(frequency0)[0][0]
         midi_index = librosa.note_to_midi(note)
         pitches.append(midi_index)
@@ -52,13 +52,16 @@ def main():
     batches = [batch.cpu().numpy() for batch in new_batches]
     pitches = annotatePitch(batches)
     score = silhouette_score(encoded, pitches, metric='euclidean')  # możesz też użyć 'cosine'
-    print(f"Silhouette Score: {score:.3f}")
+    print(f"Mean Silhouette score: {score:.3f}")
+    scores = silhouette_samples(encoded, pitches, metric="euclidean")
+    print(f"% of well separated: {len(scores[scores > 0])/len(scores) * 100:.2f}")
+    print(f"% of incorrectly separated: {len(scores[scores < 0])/len(scores) * 100:.2f}")
     # X_embedded = TSNE(n_components=2, perplexity=30, random_state=42).fit_transform(X_coded)
     # plotExtractedConcepts(X_embedded, pitches)
 
 
 if __name__ == "__main__":
     sys.argv = ["separation_score.py.py",
-                "./darbouka_decoder_5_encoded.pt",
-                "./darbouka_decoder_batches_5.pt"]
+                "./encoded/darbouka_decoder_5_encoded.pt",
+                "./activations/darbouka_decoder_batches_5.pt"]
     main()
