@@ -4,35 +4,15 @@ from torch.utils.data import random_split, DataLoader, Dataset, TensorDataset
 import tqdm
 import os
 import librosa
-
-
-# class AudioChunksDataset(Dataset):
-#     def __init__(self, audio_dir, sample_rate=44100):
-#         self.audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
-#         self.sample_rate = sample_rate
-#         self.data = []
-#         # Podział dźwięku na fragmenty podczas inicjalizacji
-#         for file_path in self.audio_files:
-#             waveform, sr = librosa.load(file_path, sr=sample_rate, mono=True)
-#             n_fft = 1024  # Rozmiar FFT (zgodny z 513 wartościami w modelu)
-#             hop_length = 256  # Przesunięcie okna
-#             fourier = librosa.stft(waveform, n_fft=n_fft, hop_length=hop_length)
-#             magnitude = torch.abs(torch.Tensor(fourier))
-#             spectrogram_frames = magnitude.T  # Transponujemy (teraz shape to [n_frames, 513])
-#             self.data.extend(spectrogram_frames)
-#         self.data = self.data[:len(self.data)//2]
-
-#     def __len__(self):
-#         return len(self.data)
-
-#     def __getitem__(self, idx):
-#         frame = self.data[idx]
-#         return frame.unsqueeze(0)
+import random
 
 
 class AudioChunksDataset(Dataset):
-    def __init__(self, audio_dir, chunk_size=513, sample_rate=48000, max_length: int = float("inf")):
+    def __init__(self, audio_dir, chunk_size=513, sample_rate=48000, max_length: int = float("inf"), seed: int = 42):
         self.audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
+        random.seed(seed)
+        random.shuffle(self.audio_files)
+        random.seed(None)
         self.sample_rate = sample_rate
         self._chunk_size = chunk_size
         self._data = []
@@ -57,7 +37,7 @@ class AudioChunksDataset(Dataset):
         return frame.unsqueeze(0)
 
 
-class LitAutoEncoder(nn.Module):
+class SparseAutoEncoder(nn.Module):
     def __init__(self, input_dim=784, latent_dim=64, sparsity_target=0.05, sparsity_weight=0.001):
         super().__init__()
 
@@ -91,8 +71,8 @@ def prepareModel(path: str, device: str):
     return model_with_weights
 
 
-def createDataloader(dataset, shuffle: bool):
-    return DataLoader(dataset, batch_size=16, shuffle=shuffle, pin_memory=True if torch.cuda.is_available() else
+def createDataloader(dataset, shuffle: bool, batch_size: int = 16):
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, pin_memory=True if torch.cuda.is_available() else
                       False, generator=torch.Generator().manual_seed(42), drop_last=True)
 
 
@@ -105,14 +85,20 @@ def prepareDataloaders(dataset: TensorDataset):
 def prepareSAE(train_dl: DataLoader, device: str, input_dim: int | None = None):
     in_channels = next(iter(train_dl)).shape[1]
     if input_dim:
-        sae = LitAutoEncoder(input_dim=input_dim, latent_dim=5 * input_dim).to(device)
+        sae = SparseAutoEncoder(input_dim=input_dim, latent_dim=5 * input_dim).to(device)
     else:
-        sae = LitAutoEncoder(input_dim=in_channels, latent_dim=5 * in_channels).to(device)
+        sae = SparseAutoEncoder(input_dim=in_channels, latent_dim=5 * in_channels).to(device)
     return sae
 
 
 def sae_loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef: float):
-    return torch.norm(sae_diff[-1][0] - sae_diff[-1][1]) + a_coef * torch.norm(bottlneck[-1], p=1)
+    mean_activation = bottlneck[-1].mean(dim=0)
+    rho = a_coef
+    rho_hat = mean_activation
+    eps = 1e-10
+    kl_divergence = torch.sum(rho * torch.log(rho / (rho_hat + eps)) +
+                              (1 - rho) * torch.log((1 - rho) / (1 - rho_hat + eps)))
+    return torch.norm(sae_diff[-1][0] - sae_diff[-1][1])**2 + a_coef * kl_divergence
 
 
 def train(
@@ -160,13 +146,15 @@ def train(
 
 def prepareTrainingHiperparams():
     hiperparams = {"loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 500, "lr": 0.00001}
+                   "epochs": 250, "lr": 0.00001, "max_activations": 500}
     return hiperparams
 
 
 def experiment(activations_path: str, output_path: str, hiperparams: dict, sae_input_channels: int | None = None):
     DEVICE = getDevice()
     activations = torch.load(activations_path)
+    if len(activations) > hiperparams["max_activations"]:
+        activations = activations[:hiperparams["max_activations"]]
     train_dl, val_dl = random_split(activations, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
     sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
     hiperparams = hiperparams

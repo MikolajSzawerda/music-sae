@@ -5,6 +5,9 @@ rave/*.txt
 rave/.vscode/*
 rave/activations_sensivity_data/*
 rave/diagrams_data/*
+rave/encoded/*
+rave/weights/*
+rave/activations/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

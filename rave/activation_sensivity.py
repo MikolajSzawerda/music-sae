@@ -1,11 +1,23 @@
-from activations import getDevice, AudioChunksDataset, createDataloader, prepareModel, getActivationEncoderLayer
-from activations import getActivationDecoderLayer
+from activations import getDevice, AudioChunksDataset, createDataloader, prepareModel
 import librosa
 import tqdm
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import argparse
+import importlib.util
+import sys
+from pathlib import Path
+
+
+def loadCallbacksModule(path: str):
+    filepath = Path(path)
+    module_name = filepath.stem
+    spec = importlib.util.spec_from_file_location(module_name, filepath)
+    modul = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = modul
+    spec.loader.exec_module(modul)
+    return modul
 
 
 def changePitch(batch, sr: int, pitch_modification_steps: int, device: str, n_fft: int):
@@ -32,34 +44,31 @@ def changeTempo(batch, rate: float, device: str, n_fft: int):
     return batch_with_changed_tempo
 
 
-def gatherActivationPatch(activation_funcs_dict: dict, activation_func_params: dict, batch, activation_layers_name: str,
-                          layer_number: int, device: str, batch_mod_func, batch_mod_func_args: dict):
-    activation_func_params["layer_name"] = str(layer_number)
-    activation_func_params["batch"] = batch.detach()
-    output = activation_funcs_dict[activation_layers_name](**activation_func_params)
-    batch_mod_func_args["batch"] = batch
+def gatherActivationPatch(callback_info: dict,
+                          batch_mod_func, batch_mod_func_args: dict):
+    output = callback_info["callback"](**callback_info["args"])
+    batch_mod_func_args["batch"] = callback_info["args"]["batch"]
     changed_batch = batch_mod_func(**batch_mod_func_args)
-    activation_func_params["batch"] = changed_batch.detach()
-    modified_output = activation_funcs_dict[activation_layers_name](**activation_func_params)
+    callback_info["args"]["batch"] = changed_batch.detach()
+    modified_output = callback_info["callback"](**callback_info["args"])
     return (modified_output, torch.norm(modified_output - output).item())
 
 
-def gatherModuleActivations(base_name: str, activation_layers_name: str, layer_number: int,
+def gatherModuleActivations(layer_name: str,
                             activations_patches_dict: dict, tensors_pairs_dict: dict,
-                            activation_funcs_dict: dict, activation_func_params: dict, batch, device: str,
+                            callback_info: dict,
                             batch_mod_func, batch_mod_func_args):
-    if (base_name + str(layer_number) not in activations_patches_dict.keys()):
-        activations_patches_dict[base_name + str(layer_number)] = 0
-    if (base_name + str(layer_number) not in tensors_pairs_dict.keys()):
-        tensors_pairs_dict[base_name + str(layer_number)] = []
-    activation_patch = gatherActivationPatch(activation_funcs_dict, activation_func_params, batch,
-                                             activation_layers_name, layer_number, device,
+    if (layer_name not in activations_patches_dict.keys()):
+        activations_patches_dict[layer_name] = 0
+    if (layer_name not in tensors_pairs_dict.keys()):
+        tensors_pairs_dict[layer_name] = []
+    activation_patch = gatherActivationPatch(callback_info,
                                              batch_mod_func, batch_mod_func_args)
-    tensors_pairs_dict[base_name + str(layer_number)].append((batch, activation_patch[0]))
-    activations_patches_dict[base_name + str(layer_number)] += activation_patch[1]
+    tensors_pairs_dict[layer_name].append((callback_info["args"]["batch"], activation_patch[0]))
+    activations_patches_dict[layer_name] += activation_patch[1]
 
 
-def gatherActivationPatches(activation_funcs_dict: dict, dataloader: torch.utils.data.DataLoader, model, device: str,
+def gatherActivationPatches(callbacks_dict: dict, dataloader: torch.utils.data.DataLoader, model, device: str,
                             batch_mod_func, batch_mod_func_args):
     activations_patches_dict = {}
     tensors_pairs_dict = {}
@@ -67,17 +76,12 @@ def gatherActivationPatches(activation_funcs_dict: dict, dataloader: torch.utils
         with torch.no_grad():
             for number, batch in enumerate(dataloader):
                 batch = batch.to(device)
-                activation_func_params = {"model": model, "batch": batch}
-                for encoder_layer_number in range(15):
-                    gatherModuleActivations("darbouka_encoder_layer", "darbouka_encoder", encoder_layer_number,
+                for layer_name, callback_info in callbacks_dict.items():
+                    callback_info["args"]["model"] = model
+                    callback_info["args"]["batch"] = batch
+                    gatherModuleActivations(layer_name,
                                             activations_patches_dict,
-                                            tensors_pairs_dict, activation_funcs_dict, activation_func_params, batch,
-                                            device, batch_mod_func, batch_mod_func_args)
-                for decoder_layer_number in range(9):
-                    gatherModuleActivations("darbouka_decoder_layer", "darbouka_decoder", decoder_layer_number,
-                                            activations_patches_dict,
-                                            tensors_pairs_dict, activation_funcs_dict, activation_func_params, batch,
-                                            device, batch_mod_func, batch_mod_func_args)
+                                            tensors_pairs_dict, callback_info, batch_mod_func, batch_mod_func_args)
                 pbar.set_postfix_str(f"Batch number: {number}")
                 pbar.update(1)
     return activations_patches_dict, tensors_pairs_dict
@@ -97,10 +101,15 @@ def plot(activation_patches_dict: dict, tested_param: str, param_modification_fa
 def getCMDArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument("audio_dir", type=str, help="Path to the directory containing audio input")
+    parser.add_argument("callbacks_file", type=str, help="Path to a file with necessary callbacks")
     parser.add_argument("tested_parameter", type=str,
                         help="Parameter used for layers' sensivity calculation (pitch or tempo)")
     parser.add_argument("params_file", type=str, help="Path to the file containing batch modification args")
     parser.add_argument("audio_category", type=str, help="Music category")
+    parser.add_argument("--chunk_size", type=int, default=513,
+                        help="Audio samples in a single tensor in an input batch for a model")
+    parser.add_argument("--batch_size", type=int, default=16,
+                        help="Number of tensors in a batch")
     args = parser.parse_args()
     return args
 
@@ -157,15 +166,15 @@ def saveSensivityScore(filename: str, activations_sensivity_dict: dict) -> None:
 def main():
     args = getCMDArgs()
     DEVICE = getDevice()
-    dataset = AudioChunksDataset(args.audio_dir, max_length=1600)
-    dataloader = createDataloader(dataset, shuffle=True)
+    dataset = AudioChunksDataset(args.audio_dir, max_length=16000, chunk_size=args.chunk_size)
+    dataloader = createDataloader(dataset, shuffle=True, batch_size=args.batch_size)
     model = prepareModel("darbouka_onnx.ts", DEVICE)
-    activation_funcs_dict = {"darbouka_encoder": getActivationEncoderLayer,
-                             "darbouka_decoder": getActivationDecoderLayer}
+    modul = loadCallbacksModule(args.callbacks_file)
+    callbacks = modul.getCallbacks()
     batch_mod_func = chooseBatchModification(args.tested_parameter)
     params_dict = readParamsFile(args.params_file)
     batch_mod_func_args = chooseBatchModificationArgs(args.tested_parameter, params_dict)
-    activations_patches_dict, tensors_pairs_dict = gatherActivationPatches(activation_funcs_dict, dataloader, model,
+    activations_patches_dict, tensors_pairs_dict = gatherActivationPatches(callbacks, dataloader, model,
                                                                            DEVICE, batch_mod_func, batch_mod_func_args)
     tested_param_value_desc = getTestedParamValueDescription(args.tested_parameter, params_dict)
     torch.save(tensors_pairs_dict,
