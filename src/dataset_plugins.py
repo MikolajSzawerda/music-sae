@@ -14,6 +14,6 @@ def get_datasets(cfg: dict) -> Generator[tuple[Dataset, dict], None, None]:
         postfix = ds_conf.pop("postfix_path", None)
         if postfix:
             ds_conf["base_dir"] = INPUT_DATA_DIR / postfix
-        else:
+        elif "base_dir" in ds_conf.keys():
             ds_conf["base_dir"] = Path(ds_conf["base_dir"])
-        yield cls(**ds_conf).prepare(**ds_conf), ds_conf
+        yield cls(**ds_conf), ds_conf

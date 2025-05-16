@@ -52,7 +52,7 @@ def main(args: TrainScriptConfig):
                 INPUT_DATA_DIR
                 / "activation"
                 / args.model_name
-                / "MusicBench"
+                / "*-gen"
                 / str(layer_id)
                 / args.dataset.split
                 / "*.arrow"
@@ -83,7 +83,7 @@ def main(args: TrainScriptConfig):
             data=iter(dl),
             trainer_configs=[trainer_cfg],
             steps=trainer_cfg["steps"],
-            save_dir=MODELS_DIR / "musicgen-sae" / str(layer_id),
+            save_dir=MODELS_DIR / "musicgen-sae-2" / str(layer_id),
             use_wandb=True,
             wandb_project="musicgen-sae",
             log_steps=args.log_steps,

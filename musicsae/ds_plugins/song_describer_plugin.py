@@ -15,7 +15,7 @@ def load_and_chunk_audio(audio_dir: Path, examples, model_sr=16000, chunk_durati
 
         audio_array = audio_resampled[0].numpy()  # shape: (samples,)
 
-        chunk_size = model_sr * chunk_duration_s
+        chunk_size = model_sr * chunk_duration_s // 2
         total_samples = audio_array.shape[0]
 
         for start in range(0, total_samples, chunk_size):
