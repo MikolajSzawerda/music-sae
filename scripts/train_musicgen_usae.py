@@ -1,5 +1,5 @@
 from musicsae.usae import USAETopKTrainer, UniversalAutoEncoder
-from dictionary_learning.training import trainSAE
+from train_usae import trainSAE
 from datasets import load_dataset
 from dataclasses import dataclass, field
 import hydra
@@ -21,7 +21,7 @@ class TrainDatasetScriptConfig:
 class TrainScriptConfig:
     dataset: TrainDatasetScriptConfig
     model_names: list[str] = field(default_factory=list)
-    activation_dims: Dict[str, int] = field(default_factory=dict)
+    activation_dims: list[dict] = field(default_factory=list)
     device: str = "cuda"
     ablation_layers: list[int] = field(default_factory=list)
     max_gen_num_tokens: int = 255
@@ -42,7 +42,7 @@ cs.store(name="config", node=TrainScriptConfig)
 
 def collate_fn(batch, device):
     activations = torch.tensor([item["activation"] for item in batch])
-    return activations.squeeze().to(device)
+    return activations.squeeze()
 
 
 def combined_iter(dataloaders: Dict[str, DataLoader]) -> Iterator[Dict[str, dict]]:
@@ -62,7 +62,7 @@ def main(args: TrainScriptConfig):
                     INPUT_DATA_DIR
                     / "activation"
                     / model_name
-                    / "*-gen"
+                    / "*_plugin"
                     / str(layer_id)
                     / args.dataset.split
                     / "*.arrow"
@@ -76,11 +76,12 @@ def main(args: TrainScriptConfig):
                 num_workers=8,
                 collate_fn=lambda x: collate_fn(x, args.device),
             )
-        dictionary_size = args.sae_size_multiplier * max(args.activation_dims.values())
+        dims = {k: v for d in args.activation_dims for k, v in d.items()}
+        dictionary_size = args.sae_size_multiplier * max(dims.values())
         trainer_cfg = {
             "trainer": USAETopKTrainer,
             "dict_class": UniversalAutoEncoder,
-            "activation_dims": args.activation_dims,
+            "activation_dims": dims,
             "dict_size": dictionary_size,
             "lr": 1e-3,
             "device": args.device,
@@ -97,7 +98,7 @@ def main(args: TrainScriptConfig):
             steps=trainer_cfg["steps"],
             save_dir=MODELS_DIR / "musicgen-usae" / str(layer_id),
             use_wandb=True,
-            wandb_project="musicgen-sae",
+            wandb_project="musicgen-usae",
             log_steps=args.log_steps,
             normalize_activations=True,
         )

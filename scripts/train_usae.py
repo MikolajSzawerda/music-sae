@@ -10,7 +10,7 @@ from contextlib import nullcontext
 
 import torch as t
 from tqdm import tqdm
-
+from random import choice
 
 from dictionary_learning.training import new_wandb_process
 
@@ -27,17 +27,15 @@ def log_stats(
 ):
     with t.no_grad():
         # quick hack to make sure all trainers get the same x
-        z = act[model_name].clone()
         for i, trainer in enumerate(trainers):
             log = {}
-            act = z.clone()
-            act, act_hat, f, losslog = trainer.loss(act, step=step, logging=True)
+            x_act, act_hat, f, losslog = trainer.loss(act, model_name, step=step, logging=True)
 
             # L0
             l0 = (f != 0).float().sum(dim=-1).mean().item()
             # fraction of variance explained
-            total_variance = t.var(act, dim=0).sum()
-            residual_variance = t.var(act - act_hat, dim=0).sum()
+            total_variance = t.var(x_act, dim=0).sum()
+            residual_variance = t.var(x_act - act_hat, dim=0).sum()
             frac_variance_explained = 1 - residual_variance / total_variance
             log[f"frac_variance_explained_{model_name}"] = frac_variance_explained.item()
 
@@ -135,10 +133,6 @@ def trainSAE(
             os.makedirs(dir, exist_ok=True)
             # save config
             config = {"trainer": trainer.config}
-            try:
-                config["buffer"] = data.config
-            except KeyError:
-                pass
             with open(os.path.join(dir, "config.json"), "w") as f:
                 json.dump(config, f, indent=4)
     else:
@@ -153,7 +147,7 @@ def trainSAE(
             trainer.ae.scale_biases(1.0)
 
     for step, act in enumerate(tqdm(data, total=steps)):
-        act = {k: v.to(dtype=autocast_dtype) for k, v in act.items()}
+        act = {k: v.to(dtype=autocast_dtype, device=device) for k, v in act.items()}
 
         if normalize_activations:
             act = {k: v / norm_factor[k] for k, v in act.items()}
@@ -163,9 +157,17 @@ def trainSAE(
 
         # logging
         if (use_wandb or verbose) and step % log_steps == 0:
-            log_stats(
-                trainers, step, act, activations_split_by_head, transcoder, log_queues=log_queues, verbose=verbose
-            )
+            for name in act.keys():
+                log_stats(
+                    trainers,
+                    step,
+                    act,
+                    activations_split_by_head,
+                    transcoder,
+                    name,
+                    log_queues=log_queues,
+                    verbose=verbose,
+                )
 
         # saving
         if save_steps is not None and step in save_steps:
@@ -188,9 +190,10 @@ def trainSAE(
                         trainer.ae.scale_biases_by_name({k: 1 / v for k, v in norm_factor.items()})
 
         # training
+        model_name = choice(list(act.keys()))
         for trainer in trainers:
             with autocast_context:
-                trainer.update(step, act)
+                trainer.update(step, act, model_name)
 
     # save final SAEs
     for save_dir, trainer in zip(save_dirs, trainers):
