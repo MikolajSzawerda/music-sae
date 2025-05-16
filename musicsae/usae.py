@@ -37,7 +37,7 @@ class UniversalAutoEncoder(Dictionary, nn.Module):
         super().__init__()
         self.model_activation_dims = model_activation_dims
         self.dict_size = dict_size
-
+        self.activation_dim = model_activation_dims
         assert isinstance(k, int) and k > 0, f"k={k} must be a positive integer"
         self.register_buffer("k", t.tensor(k, dtype=t.int))
         self.thresholds = BufferDict(
@@ -116,6 +116,13 @@ class UniversalAutoEncoder(Dictionary, nn.Module):
 
     def scale_biases(self, scale: float):
         for model_name in self.model_activation_dims.keys():
+            self.encoders[model_name].bias.data *= scale
+            self.b_dec[model_name].data *= scale
+            if self.thresholds[model_name] >= 0:
+                self.thresholds[model_name] *= scale
+
+    def scale_biases_by_name(self, scales: dict[str, float]):
+        for model_name, scale in scales.items():
             self.encoders[model_name].bias.data *= scale
             self.b_dec[model_name].data *= scale
             if self.thresholds[model_name] >= 0:
@@ -354,8 +361,8 @@ class USAETopKTrainer(SAETrainer):
     @property
     def config(self):
         return {
-            "trainer_class": "TopKTrainer",
-            "dict_class": "AutoEncoderTopK",
+            "trainer_class": "USAETopKTrainer",
+            "dict_class": "UniversalAutoEncoder",
             "lr": self.lr,
             "steps": self.steps,
             "auxk_alpha": self.auxk_alpha,
