@@ -6,6 +6,9 @@ from sklearn.metrics import silhouette_score, silhouette_samples
 import sys
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_squared_error, r2_score
 
 
 def plotExtractedConcepts(X_embedded, picthes_annotations):
@@ -99,8 +102,8 @@ def main():
         for tensor in tensors:
             new_batches.append(tensor)
     batches = [batch.cpu().numpy().squeeze(0) for batch in new_batches]
-    pitches = annotatePitch(batches, n_bins=10)
-    tempos = annotateTempo(batches, group_size=16, quantize=True, n_levels=10)
+    pitches = annotatePitch(batches, n_bins=None)
+    tempos = annotateTempo(batches, group_size=16, quantize=False, n_levels=10)
     score = silhouette_score(encoded, pitches, metric='euclidean')
     print(f"Mean Silhouette score (Pitch): {score:.3f}")
     score = silhouette_score(encoded, tempos, metric='euclidean')
@@ -115,6 +118,12 @@ def main():
     print(f"% of overlapping separations (Tempo):\
 {len(scores[(scores > -0.1) & (scores < 0.1)])/len(scores) * 100:.2f}")
     print(f"% of well separated (Tempo): {len(scores[scores >= 0.1])/len(scores) * 100:.2f}")
+    reg = RandomForestClassifier(n_estimators=100, random_state=42)
+    scores = cross_val_score(reg, encoded, pitches, cv=2)
+    print(f"Cross-val accuracy (Pitches): {np.mean(scores):.3f} ± {np.std(scores):.3f}")
+    reg = RandomForestRegressor(n_estimators=100, random_state=42)
+    scores = cross_val_score(reg, encoded, tempos, cv=2, scoring='r2', verbose=True)
+    print(f"Cross-val R² score (Tempos): {np.mean(scores):.3f} ± {np.std(scores):.3f}")
     X_embedded = TSNE(n_components=2, perplexity=30, random_state=42).fit_transform(encoded)
     plotExtractedConcepts(X_embedded, pitches)
     plotExtractedConcepts(X_embedded, tempos)

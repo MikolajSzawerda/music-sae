@@ -88,20 +88,15 @@ def prepareDataloaders(dataset: TensorDataset):
 def prepareSAE(train_dl: DataLoader, device: str, input_dim: int | None = None):
     in_channels = next(iter(train_dl)).shape[1]
     if input_dim:
-        sae = SparseAutoEncoder(input_dim=input_dim, latent_dim=5 * input_dim).to(device)
+        sae = SparseAutoEncoder(input_dim=input_dim, latent_dim=3 * input_dim).to(device)
     else:
-        sae = SparseAutoEncoder(input_dim=in_channels, latent_dim=5 * in_channels).to(device)
+        sae = SparseAutoEncoder(input_dim=in_channels, latent_dim=3 * in_channels).to(device)
     return sae
 
 
 def sae_loss(sae_diff: list[torch.Tensor], bottlneck: list[torch.Tensor], a_coef: float):
-    mean_activation = bottlneck[-1].mean(dim=0)
-    rho = a_coef
-    rho_hat = mean_activation
-    eps = 1e-10
-    kl_divergence = torch.sum(rho * torch.log(rho / (rho_hat + eps)) +
-                              (1 - rho) * torch.log((1 - rho) / (1 - rho_hat + eps)))
-    return torch.norm(sae_diff[-1][0] - sae_diff[-1][1])**2 + a_coef * kl_divergence
+    l1_norm = a_coef * torch.sum(torch.abs(bottlneck[-1]))
+    return torch.norm(sae_diff[-1][0] - sae_diff[-1][1])**2 + l1_norm
 
 
 def train(
