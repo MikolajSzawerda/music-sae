@@ -5,6 +5,8 @@ import tqdm
 import importlib.util
 import sys
 from pathlib import Path
+from typing import List, Tuple
+import random
 
 
 def loadCallbacksModule(path: str):
@@ -29,9 +31,9 @@ def getCMDArgs():
     parser.add_argument("callbacks_file", type=str, help="Path to the file with necessary callbacks")
     parser.add_argument("filename", type=str, help="Path to the file with chosen trained Rave model")
     parser.add_argument("layer_name", type=str, help="Layer name for gathering activations")
-    parser.add_argument("output_name", type=str, help="Path to the file with saved tensors")
+    parser.add_argument("output_name", type=str, help="First part of the path to the file with saved tensors")
     parser.add_argument("output_batches_name", type=str,
-                        help="Path to the file with saved batches corresponding to saved activations")
+                        help="First part of the path to the file with saved batches corresponding to saved activations")
     parser.add_argument("--chunk_size", type=int, default=513,
                         help="Audio samples in a single tensor in an input batch for a model")
     parser.add_argument("--batch_size", type=int, default=16,
@@ -66,6 +68,10 @@ def gatherActivations(callback_info, dataloader: torch.utils.data.DataLoader, de
     return activations
 
 
+def getChunkList(data: List[Tuple], chunk_size: int) -> List[List[Tuple]]:
+    return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+
+
 def main():
     args = getCMDArgs()
     DEVICE = getDevice()
@@ -76,8 +82,13 @@ def main():
     callback_info = chooseActivationFunction(args.layer_name, modul.getCallbacks())
     prepareActivationFuncParams(callback_info, args.layer_name, model)
     activations = gatherActivations(callback_info, dataloader, DEVICE)
-    torch.save([activation for batch, activation in activations], args.output_name)
-    torch.save([batch for batch, activation in activations], args.output_batches_name)
+    chunks = getChunkList(activations, chunk_size=10)
+    random.seed(42)
+    random.shuffle(chunks)
+    random.seed(None)
+    for iterator, chunk in enumerate(chunks):
+        torch.save([activation for batch, activation in chunk], args.output_name + f"_id_{iterator}.pt")
+        torch.save([batch for batch, activation in chunk], args.output_batches_name + f"_id_{iterator}.pt")
 
 
 if __name__ == "__main__":

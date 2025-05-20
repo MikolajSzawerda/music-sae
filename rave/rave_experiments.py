@@ -8,19 +8,20 @@ import random
 import matplotlib.pyplot as plt
 import json
 from pathlib import Path
+from typing import List
 
 
 class AudioChunksDataset(Dataset):
     def __init__(self, audio_dir, chunk_size=513, sample_rate=48000, max_length: int = float("inf"), seed: int = 42):
-        self.audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
+        self._audio_files = [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.endswith(".wav")]
         random.seed(seed)
-        random.shuffle(self.audio_files)
+        random.shuffle(self._audio_files)
         random.seed(None)
         self.sample_rate = sample_rate
         self._chunk_size = chunk_size
         self._data = []
         # Podział dźwięku na fragmenty podczas inicjalizacji
-        for file_path in self.audio_files:
+        for file_path in self._audio_files:
             waveform, sr = librosa.load(file_path, sr=sample_rate, mono=True)
             waveform = torch.tensor(waveform).unsqueeze(0)
             num_samples = waveform.shape[1]
@@ -31,6 +32,9 @@ class AudioChunksDataset(Dataset):
                 break
         if max_length != float("inf"):
             self._data = self._data[:max_length]
+        random.seed(seed)
+        random.shuffle(self._data)
+        random.seed(None)
 
     def __len__(self):
         return len(self._data)
@@ -106,10 +110,9 @@ def train(
     val_dl: list[torch.Tensor],
     device: str,
     optimizer: torch.optim.Optimizer,
-    output_path: str
+    train_losses: list,
+    val_losses: list
 ):
-    epoch_train_losses = []
-    epoch_val_losses = []
     with tqdm.tqdm(total=hiperparams["epochs"]) as pbar:
         for epoch in range(hiperparams["epochs"]):
             sae.train()
@@ -127,7 +130,7 @@ def train(
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-            epoch_train_losses.append(total_loss)
+            train_losses.append(total_loss)
             sae.eval()
             with torch.no_grad():
                 (
@@ -140,16 +143,14 @@ def train(
                     performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
                                hiperparams["loss_params"]["bottlneck"])
                     val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
-            epoch_val_losses.append(val_loss)
+            val_losses.append(val_loss)
             pbar.set_postfix_str(f"epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}")
             pbar.update(1)
-        torch.save(sae.state_dict(), output_path)
-        return epoch_train_losses, epoch_val_losses
 
 
 def prepareTrainingHiperparams():
     hiperparams = {"id": 0, "loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 250, "lr": 0.00001, "max_activations": 100}
+                   "epochs": 25, "lr": 0.00001, "max_activations": float('inf')}
     return hiperparams
 
 
@@ -176,19 +177,30 @@ def saveLossesToJson(losses: list[float], losses_name: str, filename: str):
         json.dump(data, f, indent=4)
 
 
-def experiment(activations_path: str, output_path: str, hiperparams: dict, sae_input_channels: int | None = None):
+def findPtFiles(folder_path: str) -> List[Path]:
+    folder = Path(folder_path)
+    return sorted(list(folder.glob("*.pt")))
+
+
+def experiment(activations_path: str, base_name: str, output_path: str, hiperparams: dict,
+               sae_input_channels: int | None = None):
     DEVICE = getDevice()
-    activations = torch.load(activations_path)
-    if len(activations) > hiperparams["max_activations"]:
-        activations = activations[:hiperparams["max_activations"]]
-    train_dl, val_dl = random_split(activations, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
-    sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
-    hiperparams = hiperparams
-    optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
-    train_losses, val_losses = train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, output_path)
-    saveLossPlots(train_losses, val_losses, "diagrams/" + Path(activations_path).stem +
+    files_paths = findPtFiles(activations_path)
+    train_losses = []
+    val_losses = []
+    for file_path in files_paths:
+        activations = torch.load(file_path)
+        if len(activations) > hiperparams["max_activations"]:
+            activations = activations[:hiperparams["max_activations"]]
+        train_dl, val_dl = random_split(activations, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
+        sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
+        hiperparams = hiperparams
+        optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
+        train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, train_losses, val_losses)
+    torch.save(sae.state_dict(), output_path)
+    saveLossPlots(train_losses, val_losses, "diagrams/" + base_name +
                   f"_loss_params_id_{hiperparams['id']}_sae.png")
-    saveLossesToJson(train_losses, "train_losses", "diagrams_data/" + Path(activations_path).stem +
+    saveLossesToJson(train_losses, "train_losses", "diagrams_data/" + base_name +
                      f"_train_losses_params_id_{hiperparams['id']}_sae.json")
-    saveLossesToJson(val_losses, "val_losses", "diagrams_data/" + Path(activations_path).stem +
+    saveLossesToJson(val_losses, "val_losses", "diagrams_data/" + base_name +
                      f"_val_losses_params_id_{hiperparams['id']}_sae.json")
