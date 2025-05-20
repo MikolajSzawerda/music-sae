@@ -5,7 +5,7 @@ import librosa
 from sklearn.metrics import silhouette_score, silhouette_samples
 import sys
 import matplotlib.pyplot as plt
-# from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE
 
 
 def plotExtractedConcepts(X_embedded, picthes_annotations):
@@ -99,8 +99,8 @@ def main():
         for tensor in tensors:
             new_batches.append(tensor)
     batches = [batch.cpu().numpy().squeeze(0) for batch in new_batches]
-    pitches = annotatePitch(batches, n_bins=20)
-    tempos = annotateTempo(batches, group_size=16, quantize=True, n_levels=20)
+    pitches = annotatePitch(batches, n_bins=10)
+    tempos = annotateTempo(batches, group_size=16, quantize=True, n_levels=10)
     score = silhouette_score(encoded, pitches, metric='euclidean')
     print(f"Mean Silhouette score (Pitch): {score:.3f}")
     score = silhouette_score(encoded, tempos, metric='euclidean')
@@ -115,12 +115,13 @@ def main():
     print(f"% of overlapping separations (Tempo):\
 {len(scores[(scores > -0.1) & (scores < 0.1)])/len(scores) * 100:.2f}")
     print(f"% of well separated (Tempo): {len(scores[scores >= 0.1])/len(scores) * 100:.2f}")
-    # X_embedded = TSNE(n_components=2, perplexity=30, random_state=42).fit_transform(X_coded)
-    # plotExtractedConcepts(X_embedded, pitches)
+    X_embedded = TSNE(n_components=2, perplexity=30, random_state=42).fit_transform(encoded)
+    plotExtractedConcepts(X_embedded, pitches)
+    plotExtractedConcepts(X_embedded, tempos)
 
 
 if __name__ == "__main__":
     sys.argv = ["separation_score.py",
-                "./encoded/darbouka_decoder_5_encoded_BN_2048.pt",
+                "./encoded/darbouka_decoder_5_encoded_BN_5120.pt",
                 "./activations/darbouka_decoder_batches_5_BN.pt"]
     main()

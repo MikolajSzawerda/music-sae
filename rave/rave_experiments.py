@@ -5,6 +5,9 @@ import tqdm
 import os
 import librosa
 import random
+import matplotlib.pyplot as plt
+import json
+from pathlib import Path
 
 
 class AudioChunksDataset(Dataset):
@@ -110,6 +113,8 @@ def train(
     optimizer: torch.optim.Optimizer,
     output_path: str
 ):
+    epoch_train_losses = []
+    epoch_val_losses = []
     with tqdm.tqdm(total=hiperparams["epochs"]) as pbar:
         for epoch in range(hiperparams["epochs"]):
             sae.train()
@@ -127,6 +132,7 @@ def train(
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+            epoch_train_losses.append(total_loss)
             sae.eval()
             with torch.no_grad():
                 (
@@ -139,15 +145,40 @@ def train(
                     performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
                                hiperparams["loss_params"]["bottlneck"])
                     val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
+            epoch_val_losses.append(val_loss)
             pbar.set_postfix_str(f"epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}")
             pbar.update(1)
         torch.save(sae.state_dict(), output_path)
+        return epoch_train_losses, epoch_val_losses
 
 
 def prepareTrainingHiperparams():
-    hiperparams = {"loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 250, "lr": 0.00001, "max_activations": 500}
+    hiperparams = {"id": 0, "loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
+                   "epochs": 250, "lr": 0.00001, "max_activations": 100}
     return hiperparams
+
+
+def saveLossPlots(train_losses: list[float], val_losses: list[float], filename: str) -> None:
+    epochs = list(range(1, len(train_losses) + 1))
+    plt.figure(figsize=(19.2, 10.8))
+    plt.plot(epochs, train_losses, label='Train Loss', marker='o')
+    plt.plot(epochs, val_losses, label='Validation Loss', marker='s')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.clf()
+
+
+def saveLossesToJson(losses: list[float], losses_name: str, filename: str):
+    data = {
+        losses_name: losses
+    }
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=4)
 
 
 def experiment(activations_path: str, output_path: str, hiperparams: dict, sae_input_channels: int | None = None):
@@ -159,4 +190,10 @@ def experiment(activations_path: str, output_path: str, hiperparams: dict, sae_i
     sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
     hiperparams = hiperparams
     optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
-    train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, output_path)
+    train_losses, val_losses = train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, output_path)
+    saveLossPlots(train_losses, val_losses, "diagrams/" + Path(activations_path).stem +
+                  f"_loss_params_id_{hiperparams['id']}_sae.png")
+    saveLossesToJson(train_losses, "train_losses", "diagrams_data/" + Path(activations_path).stem +
+                     f"_train_losses_params_id_{hiperparams['id']}_sae.json")
+    saveLossesToJson(val_losses, "val_losses", "diagrams_data/" + Path(activations_path).stem +
+                     f"_val_losses_params_id_{hiperparams['id']}_sae.json")

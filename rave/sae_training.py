@@ -1,5 +1,6 @@
 import argparse
 from rave_experiments import prepareTrainingHiperparams, experiment
+import sys
 
 
 def getCMDArgs():
@@ -17,4 +18,7 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.argv = ["sae_training.py",
+                "./activations/darbouka_decoder_5_BN.pt",
+                "./weights/sae_darbouka_decoder_5.pth"]
     main()
