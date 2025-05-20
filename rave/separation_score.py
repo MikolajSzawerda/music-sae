@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import mean_squared_error, r2_score
 
 
 def plotExtractedConcepts(X_embedded, picthes_annotations):
