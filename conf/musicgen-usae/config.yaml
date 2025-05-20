@@ -2,7 +2,10 @@ dataset:
   name: amaai-lab/MusicBench
   split: train
   column: main_caption
-model_name: medium
+model_names: [small, medium]
+activation_dims:
+  - small: 1024
+  - medium: 1536
 device: cuda
 ablation_layers: [16]
 max_gen_num_tokens: 200
