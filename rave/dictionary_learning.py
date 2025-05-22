@@ -28,6 +28,8 @@ def getCMDArgs():
     parser.add_argument("val_clusters_number", type=int, help="Number of clusters saved for validation loss computing")
     parser.add_argument("output_path", type=str, help="first part of the path to the file with encoded tensors")
     parser.add_argument("weights_path", type=str, help="Path to the file with weights for the dictionary")
+    parser.add_argument('--pretrained_weights_path',
+                        type=str, default=None, help='Path to file with pretrained weigths')
     args = parser.parse_args()
     return args
 
@@ -89,13 +91,13 @@ def getMiniBatchDictLearningParamsList(id: int, filepath: str) -> dict:
 
 
 def train(params_id: int, params_filepath: str, weights_filepath: str, epochs: int, X_val: np.ndarray,
-          base_name: str,
+          base_name: str, components: np.ndarray | None,
           files_paths: list[str]) -> list[MiniBatchDictionaryLearning]:
     dictionaries = []
     for id, training_params in getMiniBatchDictLearningParamsList(id=params_id, filepath=params_filepath):
         train_losses = []
         val_losses = []
-        components = None
+        components = components
         epochs_bar = tqdm(range(epochs), position=0, leave=True, dynamic_ncols=True)
         dictionaries.append(trainEpochs(training_params=training_params, params_id=params_id, files_paths=files_paths,
                                         weights_filepath=weights_filepath,
@@ -201,12 +203,16 @@ def prepareValidationSet(files_paths: list[str], val_clusters_number: int, seed:
 def main():
     warnings.filterwarnings("ignore")
     args = getCMDArgs()
+    weights_path = args.pretrained_weights_path
+    components = None
+    if weights_path:
+        components = np.load(weights_path, allow_pickle=True)
     files_paths = findPtFiles(args.activations_path)
     files_paths, X_val = prepareValidationSet(files_paths, args.val_clusters_number, seed=42)
     dictionaries = train(params_id=args.params_id, params_filepath=args.params_filepath,
                          weights_filepath=args.weights_path,
                          epochs=args.epochs,
-                         X_val=X_val,
+                         X_val=X_val, components=components,
                          base_name=args.base_name, files_paths=files_paths)
     print("Learning finished. Starting encoding")
     for dictionary in dictionaries:

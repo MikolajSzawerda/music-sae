@@ -192,7 +192,7 @@ def findPtFiles(folder_path: str) -> List[Path]:
 
 
 def experiment(activations_path: str, base_name: str, output_path: str, hiperparams: dict,
-               sae_input_channels: int | None = None):
+               sae_input_channels: int | None = None, pretrained_weights_path: str | None = None):
     DEVICE = getDevice()
     files_paths = findPtFiles(activations_path)
     training_files_paths, val_files_paths = train_test_split(files_paths, test_size=hiperparams["val_batches_number"],
@@ -207,6 +207,8 @@ def experiment(activations_path: str, base_name: str, output_path: str, hiperpar
     epoch_val_losses = []
     outer_epochs_bar = tqdm.tqdm(total=hiperparams["epochs_outer"], leave=True, position=0, dynamic_ncols=True)
     sae = prepareSAE(val_dl, DEVICE, sae_input_channels, multiply_factor=hiperparams["multiply_factor"])
+    if pretrained_weights_path:
+        sae.load_state_dict(torch.load(pretrained_weights_path))
     with outer_epochs_bar:
         for outer_epoch in range(hiperparams["epochs_outer"]):
             train_losses = []
