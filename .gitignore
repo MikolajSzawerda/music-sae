@@ -9,6 +9,7 @@ rave/weights/*
 rave/activations/*
 rave/activations_test/
 rave/activations_test_batches/
+rave/.venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
