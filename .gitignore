@@ -1,7 +1,8 @@
 # rave
 rave/__pycache__/*
 rave/audio/*
-rave/*.txt
+rave/pitch_params.txt
+rave/tempo_params.txt
 rave/.vscode/*
 rave/activations_sensivity_data/*
 rave/encoded/
