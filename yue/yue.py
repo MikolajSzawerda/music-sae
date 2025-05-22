@@ -38,8 +38,9 @@ from omegaconf import OmegaConf
 import torch
 from transformers import BatchEncoding
 
-from codecmanipulator import CodecManipulator
-from mmtokenizer import MMSentencePieceTokenizer
+from .common import temporary_cwd
+from .codecmanipulator import CodecManipulator
+from .mmtokenizer import MMSentencePieceTokenizer
 
 
 @dataclass
@@ -53,8 +54,9 @@ class YuEInferenceConfig:
 @dataclass
 class YuEProcessorConfig:
     tokenizer_model: str = "./mm_tokenizer_v0.2_hf/tokenizer.model"
-    codec_config: str = "./xcodec_mini_infer/final_ckpt/config.yaml"
-    codec_resume: str = "./xcodec_mini_infer/final_ckpt/ckpt_00360000.pth"
+    codec_parent_path: str = "./"
+    codec_config: str = "xcodec_mini_infer/final_ckpt/config.yaml"
+    codec_resume: str = "xcodec_mini_infer/final_ckpt/ckpt_00360000.pth"
 
 
 class YuEProcessor:
@@ -62,14 +64,18 @@ class YuEProcessor:
         if config is None:
             config = YuEProcessorConfig()
 
-        codec_model_config = OmegaConf.load(config.codec_config)
-        codec_parameter_dict = torch.load(config.codec_resume, map_location="cpu", weights_only=False)
+        codec_model_config = OmegaConf.load(os.path.join(config.codec_parent_path, config.codec_config))
+        codec_parameter_dict = torch.load(
+            os.path.join(config.codec_parent_path, config.codec_resume), map_location="cpu", weights_only=False
+        )
 
         self._device = device
         self._tokenizer = MMSentencePieceTokenizer(config.tokenizer_model)
         self._codectool = CodecManipulator("xcodec", 0, 1)
 
-        self._codec_model = SoundStream(**codec_model_config.generator.config).to(self._device)
+        with temporary_cwd(config.codec_parent_path):
+            self._codec_model = SoundStream(**codec_model_config.generator.config).to(self._device)
+
         self._codec_model.load_state_dict(codec_parameter_dict["codec_model"])
         self._codec_model.to(device)
         self._codec_model.eval()

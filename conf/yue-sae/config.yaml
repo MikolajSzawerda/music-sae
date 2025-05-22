@@ -1,1 +1,16 @@
-# @TODO: add YuE SAE config
+device: "cuda:1"
+model: "7B-anneal-en-cot"
+layer: 13
+min_new_tokens: 3000
+max_new_tokens: 3000
+seed: 42
+inference:
+  top_p: 0.93
+  temperature: 1.0
+  repetition_penalty: 1.1
+  guidance_scale: 1.5
+processor:
+  tokenizer_model: "./../models/mm_tokenizer_v0.2_hf/tokenizer.model"
+  codec_parent_path: "./../dependencies"
+  codec_config: "xcodec_mini_infer/final_ckpt/config.yaml"
+  codec_resume: "xcodec_mini_infer/final_ckpt/ckpt_00360000.pth"

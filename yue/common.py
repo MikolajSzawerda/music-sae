@@ -20,6 +20,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
+from contextlib import contextmanager
 import random
 import re
 
@@ -75,3 +77,13 @@ def split_lyrics(lyrics: str) -> list[str]:
     segments = re.findall(pattern, lyrics, re.DOTALL)
     structured_lyrics = [f"[{seg[0]}]\n{seg[1].strip()}\n\n" for seg in segments]
     return structured_lyrics
+
+
+@contextmanager
+def temporary_cwd(path):
+    previous_cwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous_cwd)
