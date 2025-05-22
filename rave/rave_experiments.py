@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 from typing import List
+from sklearn.model_selection import train_test_split
 
 
 class AudioChunksDataset(Dataset):
@@ -89,12 +90,12 @@ def prepareDataloaders(dataset: TensorDataset):
     return train_dl, val_dl
 
 
-def prepareSAE(train_dl: DataLoader, device: str, input_dim: int | None = None):
+def prepareSAE(train_dl: DataLoader, device: str, input_dim: int | None = None, multiply_factor: int = 3):
     in_channels = next(iter(train_dl)).shape[1]
     if input_dim:
-        sae = SparseAutoEncoder(input_dim=input_dim, latent_dim=3 * input_dim).to(device)
+        sae = SparseAutoEncoder(input_dim=input_dim, latent_dim=multiply_factor * input_dim).to(device)
     else:
-        sae = SparseAutoEncoder(input_dim=in_channels, latent_dim=3 * in_channels).to(device)
+        sae = SparseAutoEncoder(input_dim=in_channels, latent_dim=multiply_factor * in_channels).to(device)
     return sae
 
 
@@ -107,13 +108,12 @@ def train(
     sae: nn.Module,
     hiperparams: dict,
     train_dl: list[torch.Tensor],
-    val_dl: list[torch.Tensor],
     device: str,
     optimizer: torch.optim.Optimizer,
-    train_losses: list,
-    val_losses: list
+    train_losses: list
 ):
-    with tqdm.tqdm(total=hiperparams["epochs_inner"], leave=False, position=1, dynamic_ncols=True) as pbar:
+    with tqdm.tqdm(total=hiperparams["epochs_inner"], leave=False, position=1, dynamic_ncols=True,
+                   desc="Iterations over batch cluster") as pbar:
         for epoch in range(hiperparams["epochs_inner"]):
             sae.train()
             (
@@ -121,7 +121,8 @@ def train(
                 hiperparams["loss_params"]["bottlneck"],
                 total_loss,
             ) = [], [], 0
-            for batch in train_dl:
+            for batch in tqdm.tqdm(train_dl, leave=False, position=2, dynamic_ncols=True,
+                                   desc="Tensor batch (training)"):
                 training_batch = batch.to(device).detach()
                 performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
                            hiperparams["loss_params"]["bottlneck"])
@@ -131,27 +132,33 @@ def train(
                 loss.backward()
                 optimizer.step()
             train_losses.append(total_loss)
-            sae.eval()
-            with torch.no_grad():
-                (
-                    hiperparams["loss_params"]["sae_diff"],
-                    hiperparams["loss_params"]["bottlneck"],
-                    val_loss,
-                ) = [], [], 0
-                for batch in val_dl:
-                    training_batch = batch.to(device).detach()
-                    performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
-                               hiperparams["loss_params"]["bottlneck"])
-                    val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
-            val_losses.append(val_loss)
-            pbar.set_postfix_str(f"epoch: {epoch}, loss (data chunk): {total_loss:.3f} val_los (data chunk):\
-{val_loss:.3f}")
+            pbar.set_postfix_str(f"epoch: {epoch}, loss (data chunk): {total_loss:.3f}")
             pbar.update(1)
+
+
+def calculateValLoss(sae: nn.Module,
+                     hiperparams: dict,
+                     val_dl: list[torch.Tensor],
+                     device: str):
+    sae.eval()
+    with torch.no_grad():
+        (
+            hiperparams["loss_params"]["sae_diff"],
+            hiperparams["loss_params"]["bottlneck"],
+            val_loss,
+        ) = [], [], 0
+        for batch in tqdm.tqdm(val_dl, leave=False, position=2, dynamic_ncols=True, desc="Tensor batch (val)"):
+            training_batch = batch.to(device).detach()
+            performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
+                       hiperparams["loss_params"]["bottlneck"])
+            val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
+    return val_loss
 
 
 def prepareTrainingHiperparams():
     hiperparams = {"id": 0, "loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs_inner": 1, "lr": 0.00001, "max_activations": float('inf'), "epochs_outer": 20}
+                   "epochs_inner": 1, "lr": 0.00001, "max_activations": float('inf'), "epochs_outer": 20,
+                   "val_batches_number": 2, "multiply_factor": 3}
     return hiperparams
 
 
@@ -168,6 +175,7 @@ def saveLossPlots(train_losses: list[float], val_losses: list[float], filename: 
     plt.tight_layout()
     plt.savefig(filename)
     plt.clf()
+    plt.close()
 
 
 def saveLossesToJson(losses: list[float], losses_name: str, filename: str):
@@ -187,26 +195,40 @@ def experiment(activations_path: str, base_name: str, output_path: str, hiperpar
                sae_input_channels: int | None = None):
     DEVICE = getDevice()
     files_paths = findPtFiles(activations_path)
+    training_files_paths, val_files_paths = train_test_split(files_paths, test_size=hiperparams["val_batches_number"],
+                                                             random_state=42)
+    val_dl = None
+    for val_file_path in val_files_paths:
+        if val_dl is None:
+            val_dl = torch.load(val_file_path)
+        else:
+            val_dl.extend(torch.load(val_file_path))
     epoch_train_losses = []
     epoch_val_losses = []
     outer_epochs_bar = tqdm.tqdm(total=hiperparams["epochs_outer"], leave=True, position=0, dynamic_ncols=True)
+    sae = prepareSAE(val_dl, DEVICE, sae_input_channels, multiply_factor=hiperparams["multiply_factor"])
     with outer_epochs_bar:
         for outer_epoch in range(hiperparams["epochs_outer"]):
             train_losses = []
-            val_losses = []
-            for file_path in files_paths:
+            for file_path in training_files_paths:
                 activations = torch.load(file_path)
                 if len(activations) > hiperparams["max_activations"]:
                     activations = activations[:hiperparams["max_activations"]]
-                train_dl, val_dl = random_split(activations, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
-                sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
+                train_dl = activations
                 hiperparams = hiperparams
                 optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
-                train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, train_losses, val_losses)
-            epoch_train_losses.append(sum(train_losses)/len(train_losses))
-            epoch_val_losses.append(sum(val_losses)/len(val_losses))
-            outer_epochs_bar.set_postfix_str(f"epoch: {outer_epoch}, train loss : {epoch_train_losses[-1]:.3f} val_los:\
-{epoch_val_losses[-1]:.3f}")
+                train(sae, hiperparams, train_dl, DEVICE, optimizer, train_losses)
+                torch.save(sae.state_dict(), output_path)
+            epoch_train_losses.append(sum(train_losses))
+            epoch_val_losses.append(calculateValLoss(sae, hiperparams, val_dl, DEVICE))
+            saveLossPlots(epoch_train_losses, epoch_val_losses, "diagrams/" + base_name +
+                          f"_loss_params_id_{hiperparams['id']}_sae.png")
+            saveLossesToJson(epoch_train_losses, "train_losses", "diagrams_data/" + base_name +
+                             f"_train_losses_params_id_{hiperparams['id']}_sae.json")
+            saveLossesToJson(epoch_val_losses, "val_losses", "diagrams_data/" + base_name +
+                             f"_val_losses_params_id_{hiperparams['id']}_sae.json")
+            outer_epochs_bar.set_postfix_str(f"epoch: {outer_epoch}, train loss : {epoch_train_losses[-1]:.3f} \
+val_loss: {epoch_val_losses[-1]:.3f}")
             outer_epochs_bar.update(1)
     torch.save(sae.state_dict(), output_path)
     saveLossPlots(epoch_train_losses, epoch_val_losses, "diagrams/" + base_name +

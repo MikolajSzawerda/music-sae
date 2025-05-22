@@ -11,6 +11,8 @@ def getCMDArgs():
     parser.add_argument("activations_path", type=str, help="Path to the folder with saved tensors")
     parser.add_argument("weights_path", type=str,
                         help="Path to the file with trained sae wights")
+    parser.add_argument("multiply_factor", type=int,
+                        help="Latent dim multiply factor")
     parser.add_argument("output_path", type=str, help="First part of the path to the file with encoded tensors")
     args = parser.parse_args()
     return args
@@ -21,7 +23,8 @@ def main():
     files_paths = findPtFiles(args.activations_path)
     for file_path in files_paths:
         activations = torch.load(file_path)
-        sae = SparseAutoEncoder(input_dim=activations[0].shape[1], latent_dim=3*activations[0].shape[1])
+        sae = SparseAutoEncoder(input_dim=activations[0].shape[1],
+                                latent_dim=args.multiply_factor*activations[0].shape[1])
         sae = sae.to("cuda")
         sae.load_state_dict(torch.load(args.weights_path))
         X_coded = []
@@ -38,5 +41,6 @@ if __name__ == "__main__":
     sys.argv = ["dictionary_learning.py",
                 "./activations_test",
                 "./weights/sae_darbouka_decoder_5.pth",
+                "3",
                 "./encoded/darbouka_decoder_5_encoded_sae.pt"]
     main()
