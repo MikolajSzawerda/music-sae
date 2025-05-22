@@ -88,6 +88,24 @@
       "transform_alpha": null,
       "split_sign": false,
       "transform_max_iter": 1000
+    },
+    "5" : {
+      "n_components": 256,
+      "random_state": 42,
+      "verbose": false,
+      "alpha": 0.5,
+      "max_iter": 1,
+      "fit_algorithm": "lars",
+      "n_jobs": null,
+      "shuffle": true,
+      "batch_size": 5000,
+      "tol": 0.001,
+      "transform_algorithm": "omp",
+      "transform_n_nonzero_coefs": null,
+      "max_no_improvement": 100,
+      "transform_alpha": null,
+      "split_sign": false,
+      "transform_max_iter": 1000
     }
   }
   
