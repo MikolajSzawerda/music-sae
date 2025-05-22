@@ -19,3 +19,6 @@
 [submodule "dependencies/fadtk"]
 	path = dependencies/fadtk
 	url = https://github.com/MikolajSzawerda/fadtk.git
+[submodule "dependencies/rave"]
+	path = dependencies/rave
+	url = https://github.com/acids-ircam/RAVE.git
