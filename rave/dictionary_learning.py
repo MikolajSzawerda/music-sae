@@ -217,13 +217,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.argv = ["dictionary_learning.py",
-                "./activations_test/darbouka_decoder_7_BN",
-                "darbouka_decoder_BN_7_20",
-                "20",
-                "dict_params.json",
-                "3",
-                "70000",
-                "./encoded/darbouka_decoder_7_encoded_3_20",
-                "./weights/darbouka_decoder_7_3_20_dictionary_weights.npy"]
     main()
