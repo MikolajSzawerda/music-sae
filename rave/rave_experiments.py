@@ -112,7 +112,7 @@ def train(
     optimizer: torch.optim.Optimizer,
     train_losses: list
 ):
-    with tqdm.tqdm(total=hiperparams["epochs_inner"], leave=False, position=1, dynamic_ncols=True,
+    with tqdm.tqdm(total=hiperparams["epochs_inner"], leave=False, position=2, dynamic_ncols=True,
                    desc="Iterations over batch cluster") as pbar:
         for epoch in range(hiperparams["epochs_inner"]):
             sae.train()
@@ -121,7 +121,7 @@ def train(
                 hiperparams["loss_params"]["bottlneck"],
                 total_loss,
             ) = [], [], 0
-            for batch in tqdm.tqdm(train_dl, leave=False, position=2, dynamic_ncols=True,
+            for batch in tqdm.tqdm(train_dl, leave=False, position=3, dynamic_ncols=True,
                                    desc="Tensor batch (training)"):
                 training_batch = batch.to(device).detach()
                 performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
@@ -147,7 +147,7 @@ def calculateValLoss(sae: nn.Module,
             hiperparams["loss_params"]["bottlneck"],
             val_loss,
         ) = [], [], 0
-        for batch in tqdm.tqdm(val_dl, leave=False, position=2, dynamic_ncols=True, desc="Tensor batch (val)"):
+        for batch in tqdm.tqdm(val_dl, leave=False, position=4, dynamic_ncols=True, desc="Tensor batch (val)"):
             training_batch = batch.to(device).detach()
             performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
                        hiperparams["loss_params"]["bottlneck"])
@@ -191,6 +191,18 @@ def findPtFiles(folder_path: str) -> List[Path]:
     return sorted(list(folder.glob("*.pt")))
 
 
+def readDictParamsFile(filepath: str) -> dict[dict]:
+    with open(filepath, "r") as f:
+        data = json.load(f)
+    params_dict = {int(k): v for k, v in data.items()}
+    return params_dict
+
+
+def getLearningParamsDictsList(id: int, filepath: str) -> dict:
+    to_return_params_dict = readDictParamsFile(filepath)
+    return [(id, to_return_params_dict[id])]
+
+
 def experiment(activations_path: str, base_name: str, output_path: str, hiperparams: dict,
                sae_input_channels: int | None = None, pretrained_weights_path: str | None = None):
     DEVICE = getDevice()
@@ -205,14 +217,16 @@ def experiment(activations_path: str, base_name: str, output_path: str, hiperpar
             val_dl.extend(torch.load(val_file_path))
     epoch_train_losses = []
     epoch_val_losses = []
-    outer_epochs_bar = tqdm.tqdm(total=hiperparams["epochs_outer"], leave=True, position=0, dynamic_ncols=True)
+    outer_epochs_bar = tqdm.tqdm(total=hiperparams["epochs_outer"], leave=True, position=0, dynamic_ncols=True,
+                                 desc="Epoch")
     sae = prepareSAE(val_dl, DEVICE, sae_input_channels, multiply_factor=hiperparams["multiply_factor"])
     if pretrained_weights_path:
         sae.load_state_dict(torch.load(pretrained_weights_path))
     with outer_epochs_bar:
         for outer_epoch in range(hiperparams["epochs_outer"]):
             train_losses = []
-            for file_path in training_files_paths:
+            for file_path in tqdm.tqdm(training_files_paths, leave=False, position=1, dynamic_ncols=True,
+                                       desc="Batch cluster"):
                 activations = torch.load(file_path)
                 if len(activations) > hiperparams["max_activations"]:
                     activations = activations[:hiperparams["max_activations"]]

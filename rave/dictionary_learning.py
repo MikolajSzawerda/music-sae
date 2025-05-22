@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from rave_experiments import saveLossPlots, saveLossesToJson
 from typing import List
-import json
+from rave_experiments import getLearningParamsDictsList
 
 
 def findPtFiles(folder_path: str) -> List[Path]:
@@ -78,23 +78,11 @@ def loadActivations(activations_path: str) -> np.ndarray:
     return X
 
 
-def readDictParamsFile(filepath: str) -> dict[dict]:
-    with open(filepath, "r") as f:
-        data = json.load(f)
-    params_dict = {int(k): v for k, v in data.items()}
-    return params_dict
-
-
-def getMiniBatchDictLearningParamsList(id: int, filepath: str) -> dict:
-    to_return_params_dict = readDictParamsFile(filepath)
-    return [(id, to_return_params_dict[id])]
-
-
 def train(params_id: int, params_filepath: str, weights_filepath: str, epochs: int, X_val: np.ndarray,
           base_name: str, components: np.ndarray | None,
           files_paths: list[str]) -> list[MiniBatchDictionaryLearning]:
     dictionaries = []
-    for id, training_params in getMiniBatchDictLearningParamsList(id=params_id, filepath=params_filepath):
+    for id, training_params in getLearningParamsDictsList(id=params_id, filepath=params_filepath):
         train_losses = []
         val_losses = []
         components = components

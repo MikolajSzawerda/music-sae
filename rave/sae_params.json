@@ -1,0 +1,28 @@
+{
+    "0": {
+      "loss_params": {
+        "sae_diff": [],
+        "bottlneck": [],
+        "a_coef": 0.5
+      },
+      "epochs_inner": 1,
+      "lr": 0.00001,
+      "max_activations": "Infinity",
+      "epochs_outer": 100,
+      "val_batches_number": 2,
+      "multiply_factor": 5
+    },
+    "1": {
+      "loss_params": {
+        "sae_diff": [],
+        "bottlneck": [],
+        "a_coef": 0.3
+      },
+      "epochs_inner": 1,
+      "lr": 0.00001,
+      "max_activations": "Infinity",
+      "epochs_outer": 100,
+      "val_batches_number": 2,
+      "multiply_factor": 3
+    }
+  }
