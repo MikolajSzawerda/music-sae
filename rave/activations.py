@@ -29,6 +29,7 @@ def getCMDArgs():
     parser.add_argument("audio_dir", type=str, help="Path to the directory containing input for chosen \
                         trained Rave model")
     parser.add_argument("callbacks_file", type=str, help="Path to the file with necessary callbacks")
+    parser.add_argument("cluster_size", type=int, help="Single activation cluster size")
     parser.add_argument("filename", type=str, help="Path to the file with chosen trained Rave model")
     parser.add_argument("layer_name", type=str, help="Layer name for gathering activations")
     parser.add_argument("output_name", type=str, help="First part of the path to the file with saved tensors")
@@ -82,7 +83,7 @@ def main():
     callback_info = chooseActivationFunction(args.layer_name, modul.getCallbacks())
     prepareActivationFuncParams(callback_info, args.layer_name, model)
     activations = gatherActivations(callback_info, dataloader, DEVICE)
-    chunks = getChunkList(activations, chunk_size=64)
+    chunks = getChunkList(activations, chunk_size=args.cluster_size)
     random.seed(42)
     random.shuffle(chunks)
     random.seed(None)
