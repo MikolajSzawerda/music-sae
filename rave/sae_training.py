@@ -1,6 +1,5 @@
 import argparse
 from rave_experiments import experiment, sae_loss, getLearningParamsDictsList
-import sys
 
 
 def getCMDArgs():
@@ -29,10 +28,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.argv = ["sae_training.py",
-                "./activations_test/darbouka_decoder_7_BN",
-                "sae_params.json",
-                "0",
-                "sae_darbouka_decoder_BN_7_1024",
-                "./weights/sae_darbouka_decoder_BN_7_1024_0.pth"]
     main()
