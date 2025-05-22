@@ -6,5 +6,5 @@
   dict_params.json \
   4 \
   1 \
-  ./encoded/darbouka_decoder_7_30000/darbouka_decoder_4_50 \
+  ./encoded/darbouka_decoder_7_30000/darbouka_decoder_7_4_30000_50 \
   ./weights/darbouka_decoder_7_4_50_dictionary_weights.npy
