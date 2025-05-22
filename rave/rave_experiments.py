@@ -113,8 +113,8 @@ def train(
     train_losses: list,
     val_losses: list
 ):
-    with tqdm.tqdm(total=hiperparams["epochs"]) as pbar:
-        for epoch in range(hiperparams["epochs"]):
+    with tqdm.tqdm(total=hiperparams["epochs_inner"], leave=False, position=1, dynamic_ncols=True) as pbar:
+        for epoch in range(hiperparams["epochs_inner"]):
             sae.train()
             (
                 hiperparams["loss_params"]["sae_diff"],
@@ -144,13 +144,14 @@ def train(
                                hiperparams["loss_params"]["bottlneck"])
                     val_loss += hiperparams["loss"](**hiperparams["loss_params"]).item()
             val_losses.append(val_loss)
-            pbar.set_postfix_str(f"epoch: {epoch}, loss: {total_loss:.3f} val_los::{val_loss:.3f}")
+            pbar.set_postfix_str(f"epoch: {epoch}, loss (data chunk): {total_loss:.3f} val_los (data chunk):\
+{val_loss:.3f}")
             pbar.update(1)
 
 
 def prepareTrainingHiperparams():
     hiperparams = {"id": 0, "loss": sae_loss, "loss_params": {"sae_diff": [], "bottlneck": [], "a_coef": 1e-3},
-                   "epochs": 25, "lr": 0.00001, "max_activations": float('inf')}
+                   "epochs_inner": 1, "lr": 0.00001, "max_activations": float('inf'), "epochs_outer": 20}
     return hiperparams
 
 
@@ -186,21 +187,31 @@ def experiment(activations_path: str, base_name: str, output_path: str, hiperpar
                sae_input_channels: int | None = None):
     DEVICE = getDevice()
     files_paths = findPtFiles(activations_path)
-    train_losses = []
-    val_losses = []
-    for file_path in files_paths:
-        activations = torch.load(file_path)
-        if len(activations) > hiperparams["max_activations"]:
-            activations = activations[:hiperparams["max_activations"]]
-        train_dl, val_dl = random_split(activations, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
-        sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
-        hiperparams = hiperparams
-        optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
-        train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, train_losses, val_losses)
+    epoch_train_losses = []
+    epoch_val_losses = []
+    outer_epochs_bar = tqdm.tqdm(total=hiperparams["epochs_outer"], leave=True, position=0, dynamic_ncols=True)
+    with outer_epochs_bar:
+        for outer_epoch in range(hiperparams["epochs_outer"]):
+            train_losses = []
+            val_losses = []
+            for file_path in files_paths:
+                activations = torch.load(file_path)
+                if len(activations) > hiperparams["max_activations"]:
+                    activations = activations[:hiperparams["max_activations"]]
+                train_dl, val_dl = random_split(activations, [0.8, 0.2], generator=torch.Generator().manual_seed(42))
+                sae = prepareSAE(train_dl, DEVICE, sae_input_channels)
+                hiperparams = hiperparams
+                optimizer = torch.optim.Adam(sae.parameters(), lr=hiperparams["lr"])
+                train(sae, hiperparams, train_dl, val_dl, DEVICE, optimizer, train_losses, val_losses)
+            epoch_train_losses.append(sum(train_losses)/len(train_losses))
+            epoch_val_losses.append(sum(val_losses)/len(val_losses))
+            outer_epochs_bar.set_postfix_str(f"epoch: {outer_epoch}, train loss : {epoch_train_losses[-1]:.3f} val_los:\
+{epoch_val_losses[-1]:.3f}")
+            outer_epochs_bar.update(1)
     torch.save(sae.state_dict(), output_path)
-    saveLossPlots(train_losses, val_losses, "diagrams/" + base_name +
+    saveLossPlots(epoch_train_losses, epoch_val_losses, "diagrams/" + base_name +
                   f"_loss_params_id_{hiperparams['id']}_sae.png")
-    saveLossesToJson(train_losses, "train_losses", "diagrams_data/" + base_name +
+    saveLossesToJson(epoch_train_losses, "train_losses", "diagrams_data/" + base_name +
                      f"_train_losses_params_id_{hiperparams['id']}_sae.json")
-    saveLossesToJson(val_losses, "val_losses", "diagrams_data/" + base_name +
+    saveLossesToJson(epoch_val_losses, "val_losses", "diagrams_data/" + base_name +
                      f"_val_losses_params_id_{hiperparams['id']}_sae.json")

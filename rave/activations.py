@@ -82,7 +82,7 @@ def main():
     callback_info = chooseActivationFunction(args.layer_name, modul.getCallbacks())
     prepareActivationFuncParams(callback_info, args.layer_name, model)
     activations = gatherActivations(callback_info, dataloader, DEVICE)
-    chunks = getChunkList(activations, chunk_size=10)
+    chunks = getChunkList(activations, chunk_size=64)
     random.seed(42)
     random.shuffle(chunks)
     random.seed(None)

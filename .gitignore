@@ -4,10 +4,11 @@ rave/audio/*
 rave/*.txt
 rave/.vscode/*
 rave/activations_sensivity_data/*
-rave/diagrams_data/*
-rave/encoded/*
+rave/encoded/
 rave/weights/*
 rave/activations/*
+rave/activations_test/
+rave/activations_test_batches/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -21,6 +21,6 @@ def main():
 if __name__ == "__main__":
     sys.argv = ["sae_training.py",
                 "./activations_test",
-                "sae_darbouka_decoder_BN_7"
+                "sae_darbouka_decoder_BN_7",
                 "./weights/sae_darbouka_decoder_BN_7_0.pth"]
     main()
