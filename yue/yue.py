@@ -104,7 +104,6 @@ class YuEProcessor:
 
         raw_codes = self._encode_audio(audio, target_bw=0.5)
         code_ids = self._codectool.npy2ids(raw_codes[0])
-        print(len(code_ids))
         audio_prompt = [self._tokenizer.soa] + self._codectool.sep_ids + code_ids + [self._tokenizer.eoa]
 
         sentence_ids = (
