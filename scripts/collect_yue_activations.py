@@ -12,7 +12,7 @@ import tqdm
 from transformers import AutoModelForCausalLM, LogitsProcessorList
 
 from src.dataset_plugins import get_datasets
-from src.project_config import ACTIVATIONS_DIR
+from src.project_config import INPUT_DIR
 
 from yue.common import initialize_seed, BlockTokenRangeProcessor
 from yue.yue import YuEInferenceConfig, YuEProcessorConfig, YuEProcessor
@@ -68,7 +68,7 @@ def main(args: CollectScriptConfig):
             max_tokens = ds_cfg.get("max_tokens") or args.max_new_tokens
 
             for layer_id in list(args.layers):
-                path = ACTIVATIONS_DIR / "activation" / args.model_name / name / str(layer_id) / split
+                path = INPUT_DIR / "activation" / args.model_name / name / str(layer_id) / split
                 path.mkdir(exist_ok=True, parents=True)
 
                 layer = model.model.layers[layer_id]
