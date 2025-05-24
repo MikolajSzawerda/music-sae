@@ -23,6 +23,7 @@ dependencies = [
     "hydra-core>=1.3.2,<2",
     "wandb==0.19.8",
     "dictionary-learning",
+    "beautifulsoup4>=4.13.3",
 ]
 
 [build-system]
@@ -42,3 +43,4 @@ dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_lea
 [project.entry-points."ds_plugins"]
 music_bench_plugin = "musicsae.ds_plugins.music_bench_plugin:MusicBenchPlugin"
 song_describer_plugin = "musicsae.ds_plugins.song_describer_plugin:SongDescriberPlugin"
+fma_plugin = "musicsae.ds_plugins.fma_plugin:FmaPlugin"
