@@ -32,6 +32,7 @@ dependencies = [
     "torchaudio>=2.5.0",
     "torchvision>=0.20.0",
     "torch>=2.5.1",
+    "demucs>=4.0.1",
 ]
 
 [build-system]
