@@ -1843,6 +1843,7 @@ name = "musicsae"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "datasets" },
     { name = "dictionary-learning" },
     { name = "dotenv" },
@@ -1871,6 +1872,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.13.3" },
     { name = "datasets", specifier = ">=3.4.1,<4" },
     { name = "dictionary-learning", git = "https://github.com/MikolajSzawerda/dictionary_learning" },
     { name = "dotenv", specifier = ">=0.9.9,<0.10" },
