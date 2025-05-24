@@ -22,6 +22,7 @@ limitations under the License.
 
 import os
 from contextlib import contextmanager
+import json
 import random
 import re
 
@@ -87,3 +88,23 @@ def temporary_cwd(path):
         yield
     finally:
         os.chdir(previous_cwd)
+
+
+def load_tags() -> list[str]:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tags.json")
+
+    with open(path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    return data
+
+
+def filter_tags(tags: list[str], text: str) -> str:
+    text = text.lower()
+    filtered = [tag for tag in tags if tag in text]
+    return " ".join(filtered)
+
+
+def get_instrumental_only_lyrics() -> str:
+    instrumental_only = "[verse]\n\n\n\n\n \n[chorus]\n\n\n\n\n[chorus]\n\n\n\n\n[outro]"
+    return split_lyrics(instrumental_only)

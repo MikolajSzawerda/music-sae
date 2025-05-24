@@ -13,11 +13,14 @@ def add_audio_to_sample(audio_path: Path, model_sr, sample):
 
 
 def add_vocals_and_instruments_to_sample(audio_path: Path, model_sr, sample):
-    vocals_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
-    instruments_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
-    transform = torchaudio.transforms.Resample(sr, model_sr)
-    sample["vocals_tensor"] = transform(vocals_tensor).numpy()[0]
-    sample["instruments_tensor"] = transform(instruments_tensor).numpy()[0]
+    try:
+        vocals_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
+        instruments_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
+        transform = torchaudio.transforms.Resample(sr, model_sr)
+        sample["vocals_tensor"] = transform(vocals_tensor).numpy()[0]
+        sample["instruments_tensor"] = transform(instruments_tensor).numpy()[0]
+    except Exception as e:
+        print("ERROR WITH audio", audio_path, e)
     return sample
 
 

@@ -31,7 +31,9 @@ sys.path.append(
 # endregion
 
 from dataclasses import dataclass
+from typing import Any
 
+from einops import rearrange
 from models.soundstream_hubert_new import SoundStream
 import numpy as np
 from omegaconf import OmegaConf
@@ -81,6 +83,7 @@ class YuEProcessor:
         self._codec_model.eval()
 
         self._sos = self._tokenizer.tokenize("[start_of_segment]")
+        self._eos = self._tokenizer.tokenize("[end_of_segment]")
 
     @property
     def eoa(self):
@@ -122,3 +125,33 @@ class YuEProcessor:
         inputs = BatchEncoding({"input_ids": input_ids, "attention_mask": attention_mask})
 
         return inputs
+
+    def process_trace(self, genres: str, lyrics: list[str], vocals, instruments) -> tuple[Any, int, int]:
+        vocals_raw_codes = self._encode_audio(vocals, target_bw=0.5)
+        instruments_raw_codes = self._encode_audio(instruments, target_bw=0.5)
+        vocals_ids = self._codectool.npy2ids(vocals_raw_codes[0])
+        instruments_ids = self._codectool.npy2ids(instruments_raw_codes[0])
+
+        ids_segment_interleaved = rearrange([np.array(vocals_ids), np.array(instruments_ids)], "b n -> (n b)")
+        ids_segment_interleaved = ids_segment_interleaved.tolist()
+
+        audio_segment = [self._tokenizer.soa] + self._codectool.sep_ids
+        begin = len(audio_segment)
+        audio_segment = audio_segment + ids_segment_interleaved + [self._tokenizer.eoa]
+
+        prompt_ids = (
+            self._eos
+            + self._sos
+            + self._tokenizer.tokenize(lyrics[1])
+            + [self._tokenizer.soa]
+            + self._codectool.sep_ids
+        )
+        prompts_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(self._device)
+        audio_ids = torch.as_tensor(audio_segment).unsqueeze(0).to(self._device)
+
+        input_ids = torch.cat([audio_ids, prompts_ids], dim=1)
+
+        attention_mask = (input_ids != 0).long()
+        inputs = BatchEncoding({"input_ids": input_ids, "attention_mask": attention_mask})
+
+        return inputs, begin, begin + len(ids_segment_interleaved)

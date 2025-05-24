@@ -14,7 +14,7 @@ from transformers import AutoModelForCausalLM, LogitsProcessorList
 from src.dataset_plugins import get_datasets
 from src.project_config import INPUT_DATA_DIR
 
-from yue.common import initialize_seed, BlockTokenRangeProcessor
+from yue.common import initialize_seed, BlockTokenRangeProcessor, load_tags, filter_tags, get_instrumental_only_lyrics
 from yue.yue import YuEInferenceConfig, YuEProcessorConfig, YuEProcessor
 
 
@@ -39,6 +39,7 @@ def main(args: CollectScriptConfig):
     initialize_seed(args.seed)
 
     distributed_state = PartialState()
+
     with distributed_state.split_between_processes(
         list(get_datasets(OmegaConf.to_container(args, resolve=True)))
     ) as job_idxs:
@@ -53,6 +54,8 @@ def main(args: CollectScriptConfig):
         model.to(device)
         model.eval()
 
+        tags = load_tags()
+
         activation_dim = 4096
         features = Features({"activation": Array2D(shape=(1, activation_dim), dtype="float32")})
 
@@ -62,8 +65,6 @@ def main(args: CollectScriptConfig):
         for ds_plug, ds_cfg in job_idxs:
             ds = ds_plug.prepare(**ds_cfg)
             name, split = ds_cfg["name"], ds_cfg["split"]
-            gen_audio = "audio_tensor" not in ds.column_names
-            name = name if not gen_audio else f"{name}-gen"
             collect_bs = ds_cfg.get("batch_size") or args.collect_batch_size
             max_tokens = ds_cfg.get("max_tokens") or args.max_new_tokens
 
@@ -73,18 +74,16 @@ def main(args: CollectScriptConfig):
 
                 layer = model.model.layers[layer_id]
 
-                def generate_audio(batch):
-                    print("GEN AUDIO: Error")
-
                 def forward_audio(batch):
                     with torch.no_grad():
-                        audio = torch.tensor(batch["audio_tensor"][0], dtype=torch.float32)
-                        audio = audio.unsqueeze(0)
+                        vocals = torch.tensor(batch["vocals_tensor"][0], dtype=torch.float32)
+                        vocals = vocals.unsqueeze(0)
+                        instruments = torch.tensor(batch["instruments_tensor"][0], dtype=torch.float32)
+                        instruments = instruments.unsqueeze(0)
 
-                        inputs = processor.process(batch["main_caption"][0], batch["main_caption"], audio)
-
-                        # @TODO: 1. filter the main caption to include only popular YuE tags
-                        # @TODO: 2. create lyrics for captions?
+                        genres = filter_tags(tags, batch["main_caption"][0])
+                        lyrics = get_instrumental_only_lyrics()
+                        inputs, begin, end = processor.process_trace(genres, lyrics, vocals, instruments)
 
                         with model.trace(
                             inputs=inputs,
@@ -101,9 +100,7 @@ def main(args: CollectScriptConfig):
                             ),
                             guidance_scale=args.inference.guidance_scale,
                         ):
-                            return layer.output[0].save()
-
-                gen_activations = generate_audio if gen_audio else forward_audio
+                            return layer.output[0].save(), begin, end
 
                 shard_id, example_counts, writer = 0, 0, get_writer(path)
 
@@ -113,9 +110,12 @@ def main(args: CollectScriptConfig):
                     if distributed_state.is_main_process and distributed_state.local_process_index == 0
                     else ds_iter
                 ):
-                    activations = gen_activations(batch).view(-1, activation_dim).detach().cpu()
-                    for act in activations:
+                    activations, begin, end = forward_audio(batch)
+                    activations = activations.view(-1, activation_dim).detach().cpu()
+
+                    for act in activations[begin + 1 : end : 2, :]:
                         writer.write({"activation": act.unsqueeze(0).to(torch.float32).numpy()})
+
                     example_counts += activations.shape[0]
                     if example_counts >= args.max_examples_per_shard:
                         writer.finalize()

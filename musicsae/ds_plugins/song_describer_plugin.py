@@ -38,8 +38,12 @@ def load_and_chunk_vocals_and_instruments(audio_dir: Path, examples, model_sr=16
     instruments_dir = Path(str(audio_dir) + "-instruments") / "audio" / "audio"
 
     for i, path in enumerate(examples["path"]):
-        vocals_path = vocals_dir / path.replace(".mp3", ".2min.mp3")
-        instruments_path = instruments_dir / path.replace(".mp3", ".2min.mp3")
+        try:
+            vocals_path = vocals_dir / path.replace(".mp3", ".2min.mp3")
+            instruments_path = instruments_dir / path.replace(".mp3", ".2min.mp3")
+        except Exception as e:
+            print("ERROR WITH audio", vocals_path, e)
+            continue
 
         vocals_tensor, sr = torchaudio.load(str(vocals_path))
         instruments_tensor, sr = torchaudio.load(str(instruments_path))

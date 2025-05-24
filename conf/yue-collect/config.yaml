@@ -1,11 +1,11 @@
 seed: 42
 resample_sr: 16000
 datasets:
-  # - name: "music_bench_plugin"
-  #   split: "train"
-  #   max_rows: 60000
-  #   postfix_path: "music-bench/datashare"
-  #   separate_vocals_and_instruments: true
+  - name: "music_bench_plugin"
+    split: "train"
+    max_rows: 60000
+    postfix_path: "music-bench/datashare"
+    separate_vocals_and_instruments: true
   - name: "song_describer_plugin"
     split: "train"
     max_pre_rows: 60000
