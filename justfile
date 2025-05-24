@@ -30,6 +30,8 @@ prepare-music-bench:
 split-music-bench:
     uv run accelerate launch --gpu_ids="1" scripts/split_audio.py +audio_input_dir=data/input/music-bench/datashare +vocals_output_dir=data/input/music-bench/datashare-vocals +instruments_output_dir=data/input/music-bench/datashare-instruments
 
-
 split-song-describer:
     uv run accelerate launch --gpu_ids="1" scripts/split_audio.py +audio_input_dir=data/input/song-describer/datashare +vocals_output_dir=data/input/song-describer/datashare-vocals +instruments_output_dir=data/input/song-describer/datashare-instruments
+
+split-mtg-jamendo:
+    uv run accelerate launch --gpu_ids="0,1" scripts/split_audio.py +audio_input_dir=data/input/mtg-jamendo/datashare +vocals_output_dir=data/input/mtg-jamendo/datashare-vocals +instruments_output_dir=data/input/mtg-jamendo/datashare-instruments

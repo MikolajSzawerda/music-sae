@@ -12,6 +12,15 @@ def add_audio_to_sample(audio_path: Path, model_sr, sample):
     return sample
 
 
+def add_vocals_and_instruments_to_sample(audio_path: Path, model_sr, sample):
+    vocals_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
+    instruments_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
+    transform = torchaudio.transforms.Resample(sr, model_sr)
+    sample["vocals_tensor"] = transform(vocals_tensor).numpy()[0]
+    sample["instruments_tensor"] = transform(instruments_tensor).numpy()[0]
+    return sample
+
+
 class MusicBenchPlugin(AudioDatasetPlugin):
     name = "music_bench_plugin"
 
@@ -20,14 +29,23 @@ class MusicBenchPlugin(AudioDatasetPlugin):
         self.max_rows = max_rows
         self.seed = seed
 
-    def load(self, split: str = "train", base_dir: Path = None, **kwargs):
+    def load(
+        self, split: str = "train", base_dir: Path = None, separate_vocals_and_instruments: bool = False, **kwargs
+    ):
         ds = load_dataset("amaai-lab/MusicBench", split=split)
         ds = ds.shuffle(self.seed)
         ds = ds.select(range(min(self.max_rows, len(ds))))
+
         if base_dir is not None:
-            ds = ds.map(lambda x: add_audio_to_sample(base_dir, self.resample_sr, x)).select_columns(
-                ["main_caption", "audio_tensor", "sr"]
-            )
+            if separate_vocals_and_instruments:
+                ds.map(lambda x: add_vocals_and_instruments_to_sample(base_dir, self.resample_sr, x)).select_columns(
+                    ["main_caption", "vocals_tensor", "instruments_tensor", "sr"]
+                )
+            else:
+                ds = ds.map(lambda x: add_audio_to_sample(base_dir, self.resample_sr, x)).select_columns(
+                    ["main_caption", "audio_tensor", "sr"]
+                )
         else:
             ds = ds.select_columns(["main_caption"])
+
         return ds

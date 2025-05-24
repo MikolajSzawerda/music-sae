@@ -25,7 +25,7 @@ def separate_audio(model, device, audio_path: str):
     wav = AudioFile(audio_path).read(streams=0, samplerate=model.samplerate, channels=model.audio_channels)
     ref = wav.mean(0)
 
-    sources = apply_model(model, wav[None], device=device, num_workers=1)[0]
+    sources = apply_model(model, wav[None], device=device, num_workers=16)[0]
     sources = sources * ref.std() + ref.mean()
 
     vocals = None
