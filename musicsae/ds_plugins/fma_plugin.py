@@ -41,7 +41,7 @@ class FmaPlugin(AudioDatasetPlugin):
         self.seed = seed
 
     def load(self, split: str = "train", base_dir: Path = None, with_audio: bool = True, **kwargs):
-        ds = load_dataset("csv", data_files=str(base_dir / "medium_subset_tracks.csv"), split=split)
+        ds = load_dataset("csv", data_files=str(base_dir / "fma_tracks.csv"), split=split)
         ds = ds.shuffle(self.seed)
         ds = (
             ds.select_columns(["subpath", "text"])

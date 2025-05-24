@@ -24,6 +24,7 @@ dependencies = [
     "wandb==0.19.8",
     "dictionary-learning",
     "beautifulsoup4>=4.13.3",
+    "mutagen>=1.47.0",
 ]
 
 [build-system]
