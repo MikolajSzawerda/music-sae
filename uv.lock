@@ -1843,6 +1843,7 @@ name = "musicsae"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "datasets" },
     { name = "dictionary-learning" },
     { name = "dotenv" },
@@ -1850,6 +1851,7 @@ dependencies = [
     { name = "ipykernel" },
     { name = "jupyter" },
     { name = "jupytext" },
+    { name = "mutagen" },
     { name = "nnsight" },
     { name = "scipy" },
     { name = "seaborn" },
@@ -1871,6 +1873,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.13.3" },
     { name = "datasets", specifier = ">=3.4.1,<4" },
     { name = "dictionary-learning", git = "https://github.com/MikolajSzawerda/dictionary_learning" },
     { name = "dotenv", specifier = ">=0.9.9,<0.10" },
@@ -1878,6 +1881,7 @@ requires-dist = [
     { name = "ipykernel", specifier = ">=6.29.5,<7" },
     { name = "jupyter", specifier = ">=1.1.1,<2" },
     { name = "jupytext", specifier = ">=1.16.7,<2" },
+    { name = "mutagen", specifier = ">=1.47.0" },
     { name = "nnsight", specifier = ">=0.4.5,<0.5" },
     { name = "scipy", specifier = ">=1.15.2,<2" },
     { name = "seaborn", specifier = ">=0.13.2,<0.14" },
@@ -1895,6 +1899,15 @@ dev = [
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "ruff", specifier = ">=0.11.2" },
+]
+
+[[package]]
+name = "mutagen"
+version = "1.47.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/e6/64bc71b74eef4b68e61eb921dcf72dabd9e4ec4af1e11891bbd312ccbb77/mutagen-1.47.0.tar.gz", hash = "sha256:719fadef0a978c31b4cf3c956261b3c58b6948b32023078a2117b1de09f0fc99", size = 1274186 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b0/7a/620f945b96be1f6ee357d211d5bf74ab1b7fe72a9f1525aafbfe3aee6875/mutagen-1.47.0-py3-none-any.whl", hash = "sha256:edd96f50c5907a9539d8e5bba7245f62c9f520aef333d13392a79a4f70aca719", size = 194391 },
 ]
 
 [[package]]
