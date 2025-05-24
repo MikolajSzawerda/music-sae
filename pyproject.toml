@@ -45,3 +45,4 @@ dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_lea
 music_bench_plugin = "musicsae.ds_plugins.music_bench_plugin:MusicBenchPlugin"
 song_describer_plugin = "musicsae.ds_plugins.song_describer_plugin:SongDescriberPlugin"
 fma_plugin = "musicsae.ds_plugins.fma_plugin:FmaPlugin"
+jamendo_plugin = "musicsae.ds_plugins.jamendo_plugin:JamendoPlugin"

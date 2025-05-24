@@ -85,7 +85,7 @@ def main(args: TrainScriptConfig):
             data=inf_iter(dl),
             trainer_configs=[trainer_cfg],
             steps=trainer_cfg["steps"],
-            save_dir=MODELS_DIR / "musicgen-sae-medium-2" / str(layer_id),
+            save_dir=MODELS_DIR / "musicgen-sae-medium-fma" / str(layer_id),
             use_wandb=True,
             wandb_project="musicgen-sae-topk-multiset",
             log_steps=args.log_steps,
