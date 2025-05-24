@@ -28,4 +28,8 @@ prepare-music-bench:
 	tar -xzf data/raw/MusicBench.tar.gz -C data/input/music-bench/
 
 split-music-bench:
-    uv run accelerate launch scripts/split_audio.py +audio_input_dir=data/input/music-bench/datashare +vocals_output_dir=data/input/music-bench/datashare-vocals +instruments_output_dir=data/input/music-bench/datashare-instruments
+    uv run accelerate launch --gpu_ids="1" scripts/split_audio.py +audio_input_dir=data/input/music-bench/datashare +vocals_output_dir=data/input/music-bench/datashare-vocals +instruments_output_dir=data/input/music-bench/datashare-instruments
+
+
+split-song-describer:
+    uv run accelerate launch --gpu_ids="1" scripts/split_audio.py +audio_input_dir=data/input/song-describer/datashare +vocals_output_dir=data/input/song-describer/datashare-vocals +instruments_output_dir=data/input/song-describer/datashare-instruments

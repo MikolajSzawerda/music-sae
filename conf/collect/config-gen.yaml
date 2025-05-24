@@ -10,7 +10,7 @@ datasets:
     split: "train"
     max_pre_rows: 50000
     max_rows: 50000
-    postfix_path: "song-describer"
+    postfix_path: "song-describer/datashare"
     with_audio: False
     batch_size: 3
     max_tokens: 100

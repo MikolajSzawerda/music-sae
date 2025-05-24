@@ -9,7 +9,7 @@ import hydra
 import tqdm
 
 
-def get_audio_paths(directory: str, extension=(".wav",)):
+def get_audio_paths(directory: str, extension=(".wav", "mp3")):
     audio_paths = []
 
     for root, _, files in os.walk(directory):
