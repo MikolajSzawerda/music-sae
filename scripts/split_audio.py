@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import os
+import shutil
 
 from accelerate import PartialState
 from demucs.apply import apply_model
@@ -7,6 +8,7 @@ from demucs.audio import AudioFile, save_audio
 from demucs.pretrained import get_model
 import hydra
 import tqdm
+import torchaudio
 
 
 def get_audio_paths(directory: str, extension=(".wav", "mp3")):
@@ -40,11 +42,31 @@ def separate_audio(model, device, audio_path: str):
     return vocals, instruments
 
 
+def verify_audio(path):
+    try:
+        audio, sr = torchaudio.load(path)
+        return audio.numel() > 0
+    except KeyboardInterrupt as e:
+        raise e
+    except Exception as e:
+        print("ERROR", e)
+        return False
+
+
+def do_separate_audio(model, device, audio_path, vocals_path, instruments_path, save_cfg):
+    vocals, instruments = separate_audio(model, device, audio_path)
+
+    save_audio(vocals, vocals_path, **save_cfg)
+    save_audio(instruments, instruments_path, **save_cfg)
+
+
 @dataclass
 class SplitScriptConfig:
     audio_input_dir: str
     vocals_output_dir: str
     instruments_output_dir: str
+    skip_processed: bool = True
+    verify: bool = True
 
 
 @hydra.main(version_base=None, config_path=None)
@@ -77,17 +99,50 @@ def main(args: SplitScriptConfig):
         )
 
         for audio_path in paths:
-            vocals, instruments = separate_audio(model, distributed_state.device, audio_path)
-
             relative = os.path.relpath(audio_path, args.audio_input_dir)
-            vocals_path = os.path.join(args.vocals_output_dir, relative)
-            instruments_path = os.path.join(args.instruments_output_dir, relative)
+            vocals_path = os.path.join(args.vocals_output_dir, relative).replace(".wav", ".mp3")
+            instruments_path = os.path.join(args.instruments_output_dir, relative).replace(".wav", ".mp3")
 
             os.makedirs(os.path.dirname(vocals_path), exist_ok=True)
             os.makedirs(os.path.dirname(instruments_path), exist_ok=True)
 
-            save_audio(vocals, vocals_path, **save_cfg)
-            save_audio(instruments, instruments_path, **save_cfg)
+            health = False
+            tries = 0
+            max_tries = 3
+            already_processed = os.path.exists(vocals_path) and os.path.exists(instruments_path)
+
+            if args.skip_processed and already_processed:
+                if args.verify:
+                    health = verify_audio(vocals_path) and verify_audio(instruments_path)
+
+                    if health:
+                        continue  # Files verified
+
+                    print(f"Files for {audio_path} not verified successfully. Regenerating...")
+                else:
+                    continue  # Files already processed
+
+            while not health and tries < max_tries:
+                do_separate_audio(model, distributed_state.device, audio_path, vocals_path, instruments_path, save_cfg)
+
+                if args.verify:
+                    health = verify_audio(vocals_path) and verify_audio(instruments_path)
+                else:
+                    health = True
+
+                if not health:
+                    tries += 1
+                    print(
+                        f"Files for {audio_path} not verified successfully. Regenerating, try #{tries} of {max_tries}"
+                    )
+
+                if tries > 0 and health:
+                    print(f"Successfuly fixed {audio_path}")
+
+            if tries == max_tries:
+                print(f"Using original audio as vocal and instruments for {audio_path}")
+                shutil.copy(audio_path, vocals_path)
+                shutil.copy(audio_path, instruments_path)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,8 @@ def add_vocals_and_instruments_to_sample(audio_path: Path, model_sr, sample):
         transform = torchaudio.transforms.Resample(sr, model_sr)
         sample["vocals_tensor"] = transform(vocals_tensor).numpy()[0]
         sample["instruments_tensor"] = transform(instruments_tensor).numpy()[0]
+    except KeyboardInterrupt as e:
+        raise e
     except Exception as e:
         print("ERROR WITH audio", audio_path, e)
     return sample
