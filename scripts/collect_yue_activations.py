@@ -110,6 +110,13 @@ def main(args: CollectScriptConfig):
                     if distributed_state.is_main_process and distributed_state.local_process_index == 0
                     else ds_iter
                 ):
+                    if "vocals_tensor" not in batch:
+                        print(batch.keys())
+                        print("Batch with no audio", batch["location"])
+                        import sys
+
+                        sys.exit(1)
+
                     activations, begin, end = forward_audio(batch)
                     activations = activations.view(-1, activation_dim).detach().cpu()
 

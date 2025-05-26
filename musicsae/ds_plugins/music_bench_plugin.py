@@ -13,16 +13,17 @@ def add_audio_to_sample(audio_path: Path, model_sr, sample):
 
 
 def add_vocals_and_instruments_to_sample(audio_path: Path, model_sr, sample):
-    try:
-        vocals_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
-        instruments_tensor, sr = torchaudio.load(str(Path(str(audio_path) + "-vocals") / sample["location"]))
-        transform = torchaudio.transforms.Resample(sr, model_sr)
-        sample["vocals_tensor"] = transform(vocals_tensor).numpy()[0]
-        sample["instruments_tensor"] = transform(instruments_tensor).numpy()[0]
-    except KeyboardInterrupt as e:
-        raise e
-    except Exception as e:
-        print("ERROR WITH audio", audio_path, e)
+    vocals_tensor, sr = torchaudio.load(
+        str(Path(str(audio_path) + "-vocals") / Path(str(sample["location"]).replace(".wav", ".mp3")))
+    )
+    instruments_tensor, sr = torchaudio.load(
+        str(Path(str(audio_path) + "-instruments") / Path(str(sample["location"]).replace(".wav", ".mp3")))
+    )
+    transform = torchaudio.transforms.Resample(sr, model_sr)
+    sample["vocals_tensor"] = transform(vocals_tensor).numpy()[0]
+    sample["instruments_tensor"] = transform(instruments_tensor).numpy()[0]
+    sample["sr"] = model_sr
+
     return sample
 
 
