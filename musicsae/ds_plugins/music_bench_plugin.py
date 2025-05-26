@@ -44,9 +44,9 @@ class MusicBenchPlugin(AudioDatasetPlugin):
 
         if base_dir is not None:
             if separate_vocals_and_instruments:
-                ds.map(lambda x: add_vocals_and_instruments_to_sample(base_dir, self.resample_sr, x)).select_columns(
-                    ["main_caption", "vocals_tensor", "instruments_tensor", "sr"]
-                )
+                ds = ds.map(
+                    lambda x: add_vocals_and_instruments_to_sample(base_dir, self.resample_sr, x)
+                ).select_columns(["main_caption", "vocals_tensor", "instruments_tensor", "sr"])
             else:
                 ds = ds.map(lambda x: add_audio_to_sample(base_dir, self.resample_sr, x)).select_columns(
                     ["main_caption", "audio_tensor", "sr"]

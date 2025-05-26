@@ -6,13 +6,13 @@ datasets:
     max_rows: 60000
     postfix_path: "music-bench/datashare"
     separate_vocals_and_instruments: true
-  # - name: "song_describer_plugin"
-  #   split: "train"
-  #   max_pre_rows: 60000
-  #   max_rows: 60000
-  #   postfix_path: "song-describer/datashare"
-  #   with_audio: True
-  #   separate_vocals_and_instruments: true
+  - name: "song_describer_plugin"
+    split: "train"
+    max_pre_rows: 60000
+    max_rows: 60000
+    postfix_path: "song-describer/datashare"
+    with_audio: True
+    separate_vocals_and_instruments: true
 model_name: "7B-anneal-en-icl"
 device: "cuda:1"
 layers: [15]
