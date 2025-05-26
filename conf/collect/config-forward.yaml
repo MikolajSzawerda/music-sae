@@ -9,7 +9,7 @@ datasets:
     split: "train"
     max_pre_rows: 60000
     max_rows: 60000
-    postfix_path: "song-describer"
+    postfix_path: "song-describer/datashare"
     with_audio: True
 model_name: medium
 device: cuda
