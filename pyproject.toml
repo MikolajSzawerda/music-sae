@@ -33,6 +33,8 @@ dependencies = [
     "torchvision>=0.20.0",
     "torch>=2.5.1",
     "demucs>=4.0.1",
+    "beautifulsoup4>=4.13.3",
+    "mutagen>=1.47.0",
 ]
 
 [build-system]
@@ -72,3 +74,5 @@ explicit = true
 [project.entry-points."ds_plugins"]
 music_bench_plugin = "musicsae.ds_plugins.music_bench_plugin:MusicBenchPlugin"
 song_describer_plugin = "musicsae.ds_plugins.song_describer_plugin:SongDescriberPlugin"
+fma_plugin = "musicsae.ds_plugins.fma_plugin:FmaPlugin"
+jamendo_plugin = "musicsae.ds_plugins.jamendo_plugin:JamendoPlugin"

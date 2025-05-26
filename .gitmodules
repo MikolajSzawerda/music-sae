@@ -22,3 +22,6 @@
 [submodule "dependencies/xcodec_mini_infer"]
 	path = dependencies/xcodec_mini_infer
 	url = https://huggingface.co/m-a-p/xcodec_mini_infer.git
+[submodule "dependencies/mtg-jamendo"]
+	path = dependencies/mtg-jamendo
+	url = https://github.com/MTG/mtg-jamendo-dataset.git
