@@ -2,6 +2,7 @@ dataset:
   name: amaai-lab/MusicBench
   split: train
   column: main_caption
+project_name: musicgen-medium
 model_name: medium
 device: cuda
 ablation_layers: [16]

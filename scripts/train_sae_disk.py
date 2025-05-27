@@ -18,6 +18,7 @@ class TrainDatasetScriptConfig:
 
 @dataclass
 class TrainScriptConfig:
+    project_name: str
     dataset: TrainDatasetScriptConfig
     model_name: str = "small"
     device: str = "cuda"
@@ -43,7 +44,7 @@ def collate_fn(batch, device):
     return activations.squeeze()
 
 
-@hydra.main(version_base=None, config_path="../conf/musicgen-sae", config_name="config")
+@hydra.main(version_base=None, config_path="../conf/sae", config_name="config")
 def main(args: TrainScriptConfig):
     for layer_id in list(args.ablation_layers):
         ds = load_dataset(
@@ -57,7 +58,7 @@ def main(args: TrainScriptConfig):
         dl = DataLoader(
             ds, batch_size=args.activation_batch_size, num_workers=8, collate_fn=lambda x: collate_fn(x, args.device)
         )
-        activation_dim = 1536
+        activation_dim = ds.features["activation"].shape[1]
         dictionary_size = args.sae_size_multiplier * activation_dim
         trainer_cfg = {
             "trainer": TopKTrainer,
@@ -68,7 +69,7 @@ def main(args: TrainScriptConfig):
             "device": args.device,
             "steps": args.max_steps,
             "layer": layer_id,
-            "lm_name": f"musicgen-{args.model_name}",
+            "lm_name": f"yue-{args.model_name}",
             "warmup_steps": args.warmup_steps,
             "k": args.top_k,
             "wandb_name": str(layer_id),
@@ -85,9 +86,9 @@ def main(args: TrainScriptConfig):
             data=inf_iter(dl),
             trainer_configs=[trainer_cfg],
             steps=trainer_cfg["steps"],
-            save_dir=MODELS_DIR / "musicgen-sae-medium-fma" / str(layer_id),
+            save_dir=MODELS_DIR / args.project_name / str(layer_id),
             use_wandb=True,
-            wandb_project="musicgen-sae-topk-multiset",
+            wandb_project=args.project_name,  # @todo: args
             log_steps=args.log_steps,
             normalize_activations=True,
         )
