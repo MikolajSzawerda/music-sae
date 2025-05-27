@@ -53,7 +53,7 @@ def main(args: CollectScriptConfig):
         for ds_plug, ds_cfg in job_idxs:
             ds = ds_plug.prepare(**ds_cfg)
             name, split = ds_cfg["name"], ds_cfg["split"]
-            gen_audio = "audio_tensor" not in ds.column_names
+            gen_audio = "instruments_tensor" not in ds.column_names
             name = name if not gen_audio else f"{name}-gen"
             collect_bs = ds_cfg.get("batch_size") or args.collect_batch_size
             max_tokens = ds_cfg.get("max_tokens") or args.max_gen_num_tokens
@@ -67,7 +67,7 @@ def main(args: CollectScriptConfig):
 
                 def forward_audio(batch):
                     inputs = processor(
-                        audio=batch["audio_tensor"],
+                        audio=batch["instruments_tensor"],
                         sampling_rate=32000,
                         text=batch["main_caption"],
                         padding=True,
