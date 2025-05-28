@@ -85,10 +85,12 @@ def main(args: TrainScriptConfig):
             save_steps = list(range(args.save_steps, args.max_steps, args.save_steps))
         else:
             save_steps = []
+        run_name = f"{args.project_name}-{args.model_name}-sae-{str(uuid4())[:4]}"
         run_cfg = {
             "batch_size": args.activation_batch_size,
             "expansion_factor": args.sae_size_multiplier,
             "save_steps": save_steps,
+            "run_name": run_name,
         }
 
         def inf_iter(loader):
@@ -101,7 +103,7 @@ def main(args: TrainScriptConfig):
             data=inf_iter(dl),
             trainer_configs=[trainer_cfg],
             steps=trainer_cfg["steps"],
-            save_dir=MODELS_DIR / f"{args.project_name}-{args.model_name}-sae-{str(uuid4())[:4]}" / str(layer_id),
+            save_dir=MODELS_DIR / run_name / str(layer_id),
             use_wandb=True,
             wandb_project=args.project_name,
             log_steps=args.log_steps,
