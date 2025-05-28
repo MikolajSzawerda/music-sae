@@ -147,7 +147,7 @@ def calculateValLoss(sae: nn.Module,
             hiperparams["loss_params"]["bottlneck"],
             val_loss,
         ) = [], [], 0
-        for batch in tqdm.tqdm(val_dl, leave=False, position=4, dynamic_ncols=True, desc="Tensor batch (val)"):
+        for batch in tqdm.tqdm(val_dl, leave=False, position=2, dynamic_ncols=True, desc="Tensor batch (val)"):
             training_batch = batch.to(device).detach()
             performSAE(training_batch, sae, hiperparams["loss_params"]["sae_diff"],
                        hiperparams["loss_params"]["bottlneck"])

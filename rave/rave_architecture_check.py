@@ -41,6 +41,7 @@ def main():
         "Wymiary wejścia sieci",
         list(structure[0]["model"].named_parameters())[0][1].shape,
     )
+    print(model_with_weights)
 
 
 if __name__ == "__main__":

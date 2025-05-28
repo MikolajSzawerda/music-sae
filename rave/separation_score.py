@@ -11,10 +11,7 @@ from sklearn.model_selection import cross_val_score
 
 
 def plotExtractedConcepts(X_embedded, picthes_annotations):
-    # Wizualizacja kodów w przestrzeni 2D
     plt.figure(figsize=(10, 6))
-
-    # Kolorowanie według pitch
     plt.scatter(X_embedded[:, 0], X_embedded[:, 1], c=picthes_annotations, cmap='viridis')
     plt.title("t-SNE dla kodów: Kolorowanie wg Pitch")
     plt.colorbar()
@@ -24,27 +21,17 @@ def plotExtractedConcepts(X_embedded, picthes_annotations):
 
 
 def annotatePitch(batches: list[np.ndarray], n_bins: int = None) -> list[float]:
-    # Połącz wszystkie fragmenty w jeden ciąg sygnału
     signal = np.concatenate(batches)
-
-    # Wyznacz częstotliwości podstawowe
     frequencies = librosa.yin(signal, sr=48000, fmin=188, fmax=5000, frame_length=513, hop_length=513)
     if n_bins is not None and n_bins > 0:
-        # Usuń NaN i 0 (które mogą się pojawić, gdy brak detekcji)
         valid_freq = np.array([f for f in frequencies if not np.isnan(f) and f > 0])
         sorted_freq = np.sort(valid_freq)
-
-        # Podział na równe grupy częstotliwości (equal-frequency binning)
         bins = np.array_split(sorted_freq, n_bins)
         bin_means = [np.mean(b) if len(b) > 0 else 0 for b in bins]
-
-        # Mapa: częstotliwość -> zkwantyzowana wartość
         freq_to_quantized = {}
         for b, mean in zip(bins, bin_means):
             for val in b:
                 freq_to_quantized[val] = mean
-
-        # Przypisanie każdej częstotliwości do odpowiedniego przedziału
         quantized_freqs = [freq_to_quantized.get(f, 0) if not np.isnan(f) and f > 0 else 0 for f in frequencies]
     else:
         quantized_freqs = frequencies
@@ -57,7 +44,6 @@ def quantize_values(values: np.ndarray, n_levels: int) -> np.ndarray:
     min_val, max_val = np.min(values), np.max(values)
     bins = np.linspace(min_val, max_val, n_levels + 1)
     quantized = np.digitize(values, bins) - 1
-    # Wartości większe niż n_levels-1 ustaw na n_levels-1 (ostatni bin)
     quantized = np.clip(quantized, 0, n_levels - 1)
     centers = (bins[:-1] + bins[1:]) / 2
     return centers[quantized]
@@ -77,7 +63,6 @@ def annotateTempo(batches: list[np.ndarray], group_size: int = 16, quantize: boo
     grouped_tempi = np.array(grouped_tempi, dtype=float)
     if quantize:
         grouped_tempi = quantize_values(grouped_tempi, n_levels)
-    # zawsze zapewniamy 1D, np.ravel() nie zaszkodzi:
     grouped_tempi = grouped_tempi.ravel()
     return grouped_tempi.tolist()
 
