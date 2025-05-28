@@ -14,13 +14,13 @@ datasets:
     split: "train"
     max_pre_rows: 60000
     max_rows: 60000
-    postfix_path: "song-describer"
+    postfix_path: "song-describer/datashare"
     with_audio: True
   - name: "song_describer_plugin"
     split: "train"
     max_pre_rows: 5000
     max_rows: 5000
-    postfix_path: "song-describer"
+    postfix_path: "song-describer/datashare"
     with_audio: False
     batch_size: 1
     max_tokens: 100

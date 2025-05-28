@@ -3,9 +3,10 @@ name = "musicsae"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Mikołaj Szawerda", email = "mikolaj.szawerda@gmail.com" }, { name = "Mateusz Kiełbus", email = "mateusz.kielbus.mk@gmail.com" }, { name = "Patryk Filip Gryz", email = "pfgryz@gmail.com"}]
-requires-python = "~=3.10"
+requires-python = ">=3.10,<3.11"
 readme = "README.md"
 dependencies = [
+    "flash-attn==2.7.3",
     "ipykernel>=6.29.5,<7",
     "transformers>=4.50.0,<5",
     "scipy>=1.15.2,<2",
@@ -14,15 +15,26 @@ dependencies = [
     "soundfile>=0.13.1,<0.14",
     "jupytext>=1.16.7,<2",
     "dotenv>=0.9.9,<0.10",
-    "torchaudio==2.6.0",
     "simple-parsing>=0.1.7,<0.2",
     "seaborn>=0.13.2,<0.14",
     "toolz>=1.0.0,<2",
     "tqdm>=4.67.1,<5",
     "jupyter>=1.1.1,<2",
+    "tensorboard>=2.19.0",
     "hydra-core>=1.3.2,<2",
     "wandb==0.19.8",
     "dictionary-learning",
+    "descript-audio-codec>=1.0.0",
+    "descript-audiotools>=0.7.2",
+    "einops>=0.8.1",
+    "sentencepiece>=0.2.0",
+    "setuptools>=78.1.0",
+    "torchaudio>=2.5.0",
+    "torchvision>=0.20.0",
+    "torch>=2.5.1",
+    "demucs>=4.0.1",
+    "beautifulsoup4>=4.13.3",
+    "mutagen>=1.47.0",
 ]
 
 [build-system]
@@ -34,11 +46,33 @@ dev = [
     "ruff>=0.11.2",
     "pre-commit>=4.2.0",
     "pytest>=8.3.5",
+    "pip>=25.0.1",
+    "uv>=0.6.14",
+    "rust-just>=1.40.0",
 ]
+
+[tool.uv]
+no-build-isolation-package = [ "flash-attn" ]
 
 [tool.uv.sources]
 dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_learning" }
+torch = [
+    { index = "pytorch-cu121" },
+]
+torchaudio = [
+    { index = "pytorch-cu121" },
+]
+torchvision = [
+    { index = "pytorch-cu121" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
 
 [project.entry-points."ds_plugins"]
 music_bench_plugin = "musicsae.ds_plugins.music_bench_plugin:MusicBenchPlugin"
 song_describer_plugin = "musicsae.ds_plugins.song_describer_plugin:SongDescriberPlugin"
+fma_plugin = "musicsae.ds_plugins.fma_plugin:FmaPlugin"
+jamendo_plugin = "musicsae.ds_plugins.jamendo_plugin:JamendoPlugin"

@@ -40,7 +40,7 @@ cs.store(name="config", node=TrainScriptConfig)
 
 def collate_fn(batch, device):
     activations = torch.tensor([item["activation"] for item in batch])
-    return activations.squeeze().to(device)
+    return activations.squeeze()
 
 
 @hydra.main(version_base=None, config_path="../conf/musicgen-sae", config_name="config")
@@ -49,13 +49,7 @@ def main(args: TrainScriptConfig):
         ds = load_dataset(
             "arrow",
             data_files=str(
-                INPUT_DATA_DIR
-                / "activation"
-                / args.model_name
-                / "*-gen"
-                / str(layer_id)
-                / args.dataset.split
-                / "*.arrow"
+                INPUT_DATA_DIR / "activation" / args.model_name / "*" / str(layer_id) / args.dataset.split / "*.arrow"
             ),
             streaming=True,
             split="train",
@@ -78,14 +72,22 @@ def main(args: TrainScriptConfig):
             "warmup_steps": args.warmup_steps,
             "k": args.top_k,
             "wandb_name": str(layer_id),
+            # "auxk_alpha": 1/4
         }
+
+        def inf_iter(loader):
+            while True:
+                it = iter(loader)
+                for res in it:
+                    yield res
+
         trainSAE(
-            data=iter(dl),
+            data=inf_iter(dl),
             trainer_configs=[trainer_cfg],
             steps=trainer_cfg["steps"],
-            save_dir=MODELS_DIR / "musicgen-sae-2" / str(layer_id),
+            save_dir=MODELS_DIR / "musicgen-sae-medium-fma" / str(layer_id),
             use_wandb=True,
-            wandb_project="musicgen-sae",
+            wandb_project="musicgen-sae-topk-multiset",
             log_steps=args.log_steps,
             normalize_activations=True,
         )

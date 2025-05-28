@@ -1,20 +1,16 @@
 resample_sr: 32000
 seed: 42
 datasets:
-  - name: "music_bench_plugin"
-    split: "train"
-    max_rows: 60000
-    postfix_path: "music-bench/datashare"
-  - name: "song_describer_plugin"
+  - name: "fma_plugin"
     split: "train"
     max_pre_rows: 60000
     max_rows: 60000
-    postfix_path: "song-describer/datashare"
+    postfix_path: "fma_medium"
     with_audio: True
 model_name: medium
 device: cuda
 layers: [16]
 max_gen_num_tokens: 500
-collect_batch_size: 5
+collect_batch_size: 3
 model_sampling_rate: 32000
 max_examples_per_shard: 1000000
