@@ -10,10 +10,10 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 
 
-def plotExtractedConcepts(X_embedded, picthes_annotations):
+def plotExtractedConcepts(X_embedded, picthes_annotations, metric: str):
     plt.figure(figsize=(10, 6))
     plt.scatter(X_embedded[:, 0], X_embedded[:, 1], c=picthes_annotations, cmap='viridis')
-    plt.title("t-SNE dla kodów: Kolorowanie wg Pitch")
+    plt.title(f"T-SNE: {metric}")
     plt.colorbar()
 
     plt.tight_layout()
@@ -67,6 +67,24 @@ def annotateTempo(batches: list[np.ndarray], group_size: int = 16, quantize: boo
     return grouped_tempi.tolist()
 
 
+def computeMeanActivations(encoded_tensor: torch.Tensor, labels_tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Oblicza średnie aktywacje dla każdej unikalnej klasy w picthes_tensor.
+
+    :param encoded_tensor: Tensor zakodowanych cech [N, D]
+    :param picthes_tensor: Tensor klas pitch [N]
+    :return: Tensor średnich aktywacji [C, D]
+    """
+    unique_classes = torch.unique(labels_tensor, return_counts=False)
+    mean_activations = []
+    for c in unique_classes:
+        class_mask = (labels_tensor == c)
+        class_features = encoded_tensor[class_mask]
+        class_mean = class_features.mean(dim=0)
+        mean_activations.append(class_mean)
+    return torch.stack(mean_activations), unique_classes
+
+
 def getCMDArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument("encoded_path", type=str, help="Path to the file with saved tensors")
@@ -88,6 +106,18 @@ def main():
     batches = [batch.cpu().numpy().squeeze(0) for batch in new_batches]
     pitches = annotatePitch(batches, n_bins=None)
     tempos = annotateTempo(batches, group_size=16, quantize=False, n_levels=10)
+    encoded_tensor = torch.tensor(encoded)
+    picthes_tensor = torch.tensor(pitches)
+    tempos_tensor = torch.tensor(tempos)
+    topk = 10
+    mean_activations, unique_classes = computeMeanActivations(encoded_tensor, picthes_tensor)
+    for idx, c in enumerate(unique_classes):
+        top_neurons = torch.topk(mean_activations[idx], topk).indices
+        print(f"Pitch {c.item()}: Top {topk} neurons: {sorted(top_neurons.tolist())}")
+    mean_activations, unique_classes = computeMeanActivations(encoded_tensor, tempos_tensor)
+    for idx, c in enumerate(unique_classes):
+        top_neurons = torch.topk(mean_activations[idx], topk).indices
+        print(f"Tempo {c.item()}: Top {topk} neurons: {sorted(top_neurons.tolist())}")
     score = silhouette_score(encoded, pitches, metric='euclidean')
     print(f"Mean Silhouette score (Pitch): {score:.3f}")
     score = silhouette_score(encoded, tempos, metric='euclidean')
@@ -103,18 +133,18 @@ def main():
 {len(scores[(scores > -0.1) & (scores < 0.1)])/len(scores) * 100:.2f}")
     print(f"% of well separated (Tempo): {len(scores[scores >= 0.1])/len(scores) * 100:.2f}")
     reg = RandomForestClassifier(n_estimators=100, random_state=42)
-    scores = cross_val_score(reg, encoded, pitches, cv=2)
+    scores = cross_val_score(reg, encoded, pitches, cv=3)
     print(f"Cross-val accuracy (Pitches): {np.mean(scores):.3f} ± {np.std(scores):.3f}")
     reg = RandomForestRegressor(n_estimators=100, random_state=42)
-    scores = cross_val_score(reg, encoded, tempos, cv=2, scoring='r2', verbose=True)
+    scores = cross_val_score(reg, encoded, tempos, cv=3, scoring='r2', verbose=True)
     print(f"Cross-val R² score (Tempos): {np.mean(scores):.3f} ± {np.std(scores):.3f}")
     X_embedded = TSNE(n_components=2, perplexity=30, random_state=42).fit_transform(encoded)
-    plotExtractedConcepts(X_embedded, pitches)
-    plotExtractedConcepts(X_embedded, tempos)
+    plotExtractedConcepts(X_embedded, pitches, "pitch")
+    plotExtractedConcepts(X_embedded, tempos, "tempo")
 
 
 if __name__ == "__main__":
     sys.argv = ["separation_score.py",
-                "./encoded/darbouka_decoder_5_encoded_BN_5120.pt",
-                "./activations/darbouka_decoder_batches_5_BN.pt"]
+                "./encoded/sae_darbouka_encoder_2_Rock_1024_0/sae_darbouka_encoder_2_Rock_1024_0_id_0.npy",
+                "./activations_test_batches/darbouka_encoder_2_batches_Rock/darbouka_encoder_batches_2_1024_id_0.pt"]
     main()

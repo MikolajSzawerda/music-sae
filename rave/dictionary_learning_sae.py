@@ -21,7 +21,7 @@ def getCMDArgs():
 def main():
     args = getCMDArgs()
     files_paths = findPtFiles(args.activations_path)
-    for file_path in files_paths:
+    for iterator, file_path in enumerate(files_paths):
         activations = torch.load(file_path)
         sae = SparseAutoEncoder(input_dim=activations[0].shape[1],
                                 latent_dim=args.multiply_factor*activations[0].shape[1])
@@ -34,13 +34,13 @@ def main():
                 for tensor in temp:
                     X_coded.append(tensor.cpu().numpy())
         X_coded = np.asarray(X_coded)
-    torch.save(X_coded, args.output_path)
+        torch.save(X_coded, args.output_path + f"_id_{iterator}.npy")
 
 
 if __name__ == "__main__":
-    sys.argv = ["dictionary_learning.py",
-                "./activations_test",
-                "./weights/sae_darbouka_decoder_5.pth",
-                "3",
-                "./encoded/darbouka_decoder_5_encoded_sae.pt"]
+    sys.argv = ["dictionary_learning_sae.py",
+                "./activations_test/darbouka_encoder_2_Rock_1024",
+                "weights/sae_darbouka_encoder_2_Rock_1024_0_cont2.pth",
+                "5",
+                "./encoded/sae_darbouka_encoder_2_Rock_1024_0/sae_darbouka_encoder_2_Rock_1024_0"]
     main()
