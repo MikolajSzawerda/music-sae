@@ -65,7 +65,7 @@ def main(args: TrainScriptConfig):
             "dict_class": AutoEncoderTopK,
             "activation_dim": activation_dim,
             "dict_size": dictionary_size,
-            "lr": 1e-3,
+            "lr": 1e-4,
             "device": args.device,
             "steps": args.max_steps,
             "layer": layer_id,
