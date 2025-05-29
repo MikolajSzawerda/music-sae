@@ -33,10 +33,12 @@ class TrainScriptConfig:
     save_steps: int | None = None
     auxk_alpha: float = 0.03125
     lr: float = 1e-3
+    n_cpu_workers: int = 12
 
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=TrainScriptConfig)
+cs.store(name="config-yue", node=TrainScriptConfig)
 
 
 def collate_fn(batch, device):
@@ -62,7 +64,10 @@ def main(args: TrainScriptConfig):
             split="train",
         )
         dl = DataLoader(
-            ds, batch_size=args.activation_batch_size, num_workers=8, collate_fn=lambda x: collate_fn(x, args.device)
+            ds,
+            batch_size=args.activation_batch_size,
+            num_workers=min(ds.n_shards, args.n_cpu_workers),
+            collate_fn=lambda x: collate_fn(x, args.device),
         )
         activation_dim = ds.features["activation"].shape[1]
         dictionary_size = args.sae_size_multiplier * activation_dim
