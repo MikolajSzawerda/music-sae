@@ -123,7 +123,7 @@ def main(args: CollectScriptConfig):
                     for act in activations[begin + 1 : end : 2, :]:
                         writer.write({"activation": act.unsqueeze(0).to(torch.float32).numpy()})
 
-                    example_counts += activations.shape[0]
+                    example_counts += activations.shape[0] / 2
                     if example_counts >= args.max_examples_per_shard:
                         writer.finalize()
                         shard_id += 1

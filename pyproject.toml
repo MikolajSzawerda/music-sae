@@ -55,7 +55,8 @@ dev = [
 no-build-isolation-package = [ "flash-attn" ]
 
 [tool.uv.sources]
-dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_learning" }
+dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_learning", rev="63dbe5a941cfd5ce4b5b634450b6cf0b2d1b35f0" }
+
 torch = [
     { index = "pytorch-cu121" },
 ]

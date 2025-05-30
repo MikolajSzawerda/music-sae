@@ -14,7 +14,7 @@ datasets:
     with_audio: True
     separate_vocals_and_instruments: true
 model_name: "7B-anneal-en-icl"
-device: "cuda:1"
+device: cuda:1
 layers: [15]
 min_new_tokens: 3000
 max_new_tokens: 3000
