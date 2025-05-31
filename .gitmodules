@@ -19,6 +19,9 @@
 [submodule "dependencies/fadtk"]
 	path = dependencies/fadtk
 	url = https://github.com/MikolajSzawerda/fadtk.git
+[submodule "dependencies/rave"]
+	path = dependencies/rave
+	url = https://github.com/acids-ircam/RAVE.git
 [submodule "dependencies/xcodec_mini_infer"]
 	path = dependencies/xcodec_mini_infer
 	url = https://huggingface.co/m-a-p/xcodec_mini_infer.git
