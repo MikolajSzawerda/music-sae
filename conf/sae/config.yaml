@@ -1,0 +1,15 @@
+dataset:
+  regex_name: "*"
+  split: train
+project_name: "sae-debug"
+model_name: small
+device: cpu
+ablation_layers: [22]
+max_steps: 120000
+log_steps: 300
+activation_batch_size: 10000
+warmup_steps: 300
+top_k: 32
+seed: 42
+sae_size_multiplier: 32
+lr: 0.001
