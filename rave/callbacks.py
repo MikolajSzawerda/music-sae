@@ -98,30 +98,19 @@ def postEncode(model, x: torch.Tensor) -> torch.Tensor:
 
 
 def preDecode(model, z: torch.Tensor) -> torch.Tensor:
-    # Jeśli model jest stereo, duplikujemy latenty
     if model.stereo:
-        z0 = torch.cat([z, z], dim=0)  # 2x batch
+        z0 = torch.cat([z, z], dim=0)
     else:
         z0 = z
-
-    # Jeśli używamy trybu wariacyjnego (VAE)
     if model.mode == "variational":
         batch_size = z0.size(0)
         time_steps = z0.size(-1)
-
-        # Uzupełnij latenty o szum
         noise_dims = model.full_latent_size - model.latent_size
         noise = torch.randn(batch_size, noise_dims, time_steps)
-
-        # Sklej latenty ze szumem
         z2 = torch.cat([z0, noise], dim=1)
-
-        # PCA: zastosuj odwrotną projekcję przez conv1d
-        pca_weights = model.latent_pca.numpy().T  # transpozycja PCA
+        pca_weights = model.latent_pca.numpy().T
         pca_weights_tensor = torch.from_numpy(pca_weights).unsqueeze(-1)
         z3 = torch.conv1d(z2, pca_weights_tensor)
-
-        # Dodaj średnią latentów
         z4 = z3 + model.latent_mean.unsqueeze(-1)
         z1 = z4
     else:

@@ -2,7 +2,6 @@ import argparse
 import torch
 import numpy as np
 from rave_experiments import SparseAutoEncoder, findPtFiles
-import sys
 from tqdm import tqdm
 
 
@@ -38,9 +37,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.argv = ["dictionary_learning_sae.py",
-                "./activations_test/darbouka_encoder_2_Rock_1024",
-                "weights/sae_darbouka_encoder_2_Rock_1024_0_cont2.pth",
-                "5",
-                "./encoded/sae_darbouka_encoder_2_Rock_1024_0/sae_darbouka_encoder_2_Rock_1024_0"]
     main()

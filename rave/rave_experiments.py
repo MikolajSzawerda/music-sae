@@ -21,7 +21,6 @@ class AudioChunksDataset(Dataset):
         self.sample_rate = sample_rate
         self._chunk_size = chunk_size
         self._data = []
-        # Podział dźwięku na fragmenty podczas inicjalizacji
         for file_path in self._audio_files:
             waveform, sr = librosa.load(file_path, sr=sample_rate, mono=True)
             waveform = torch.tensor(waveform).unsqueeze(0)

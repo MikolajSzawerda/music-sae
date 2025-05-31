@@ -3,7 +3,6 @@ import torch
 import numpy as np
 import librosa
 from sklearn.metrics import silhouette_score, silhouette_samples
-import sys
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
@@ -68,13 +67,6 @@ def annotateTempo(batches: list[np.ndarray], group_size: int = 16, quantize: boo
 
 
 def computeMeanActivations(encoded_tensor: torch.Tensor, labels_tensor: torch.Tensor) -> torch.Tensor:
-    """
-    Oblicza średnie aktywacje dla każdej unikalnej klasy w picthes_tensor.
-
-    :param encoded_tensor: Tensor zakodowanych cech [N, D]
-    :param picthes_tensor: Tensor klas pitch [N]
-    :return: Tensor średnich aktywacji [C, D]
-    """
     unique_classes = torch.unique(labels_tensor, return_counts=False)
     mean_activations = []
     for c in unique_classes:
@@ -144,7 +136,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.argv = ["separation_score.py",
-                "./encoded/sae_darbouka_encoder_2_Rock_1024_0/sae_darbouka_encoder_2_Rock_1024_0_id_0.npy",
-                "./activations_test_batches/darbouka_encoder_2_batches_Rock/darbouka_encoder_batches_2_1024_id_0.pt"]
     main()

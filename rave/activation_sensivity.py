@@ -101,6 +101,7 @@ def plot(activation_patches_dict: dict, tested_param: str, param_modification_fa
 def getCMDArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument("audio_dir", type=str, help="Path to the directory containing audio input")
+    parser.add_argument("filename", type=str, help="Path to the file with chosen trained Rave model")
     parser.add_argument("callbacks_file", type=str, help="Path to a file with necessary callbacks")
     parser.add_argument("tested_parameter", type=str,
                         help="Parameter used for layers' sensivity calculation (pitch or tempo)")
@@ -166,9 +167,9 @@ def saveSensivityScore(filename: str, activations_sensivity_dict: dict) -> None:
 def main():
     args = getCMDArgs()
     DEVICE = getDevice()
-    dataset = AudioChunksDataset(args.audio_dir, max_length=16000, chunk_size=args.chunk_size)
+    dataset = AudioChunksDataset(args.audio_dir, max_length=float("inf"), chunk_size=args.chunk_size)
     dataloader = createDataloader(dataset, shuffle=True, batch_size=args.batch_size)
-    model = prepareModel("darbouka_onnx.ts", DEVICE)
+    model = prepareModel(args.filename, DEVICE)
     modul = loadCallbacksModule(args.callbacks_file)
     callbacks = modul.getCallbacks()
     batch_mod_func = chooseBatchModification(args.tested_parameter)

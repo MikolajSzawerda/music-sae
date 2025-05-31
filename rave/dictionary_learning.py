@@ -173,7 +173,7 @@ def encode(dictionaries: list[MiniBatchDictionaryLearning], files_paths: list[st
             for to_encode in tqdm(X, "Dictionary transform"):
                 X_coded.append(dictionary.transform(to_encode.reshape(1, -1)).squeeze())
             X_coded = np.array(X_coded)
-            torch.save(X_coded, output_path + file_path.stem + f'_{dict_number}_.pt')
+            torch.save(X_coded, output_path + file_path.stem + f'_{dict_number}_.npy')
 
 
 def prepareValidationSet(files_paths: list[str], val_clusters_number: int, seed: int) -> tuple[list[str], np.ndarray]:
@@ -203,8 +203,8 @@ def main():
                          X_val=X_val, components=components,
                          base_name=args.base_name, files_paths=files_paths)
     print("Learning finished. Starting encoding")
-    for dictionary in dictionaries:
-        np.save(args.weights_path, dictionary.components_)
+    for iterator, dictionary in enumerate(dictionaries):
+        np.save(f"{args.weights_path}_id_{iterator}.npy", dictionary.components_)
     encode(dictionaries=dictionaries, files_paths=files_paths, output_path=args.output_path)
 
 
