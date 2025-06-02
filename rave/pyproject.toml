@@ -8,12 +8,12 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
 dependencies = [
-    "acids-rave @ file:///home/mateusz/Python/music-sae/dependencies/rave",
+    "acids-rave @ ../dependencies/rave",
     "ffprobe (>=0.5,<0.6)",
     "ffmpeg (>=1.4,<2.0)",
     "librosa (>=0.11.0,<0.12.0)",
     "argparse (>=1.4.0,<2.0.0)",
-    "nnsight @ file:///home/mateusz/Python/music-sae/dependencies/nnsight",
+    "nnsight"
     "matplotlib (>=3.10.1,<4.0.0)"
 ]
 
