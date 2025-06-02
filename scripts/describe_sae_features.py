@@ -81,7 +81,7 @@ class Args:
 def load_feature_keys(num_features: int, *, random_choice: bool = False) -> tuple[list[str], dict[str, list[str]]]:
     """Load the feature list and return the keys to process and the full dict."""
 
-    features_path = INPUT_DATA_DIR / "interp" / "features.json"
+    features_path = INPUT_DATA_DIR / "interp" / "features_grouped.json"
     with features_path.open("r") as fh:
         features_dict: Dict[str, List[str]] = json.load(fh)
 
