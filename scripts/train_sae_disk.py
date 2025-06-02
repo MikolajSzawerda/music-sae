@@ -33,7 +33,7 @@ class TrainScriptConfig:
     save_steps: int | None = None
     auxk_alpha: float = 0.03125
     lr: float = 1e-3
-    n_cpu_workers: int = 12
+    n_cpu_workers: int = 24
 
 
 cs = ConfigStore.instance()
@@ -115,6 +115,7 @@ def main(args: TrainScriptConfig):
             normalize_activations=False,
             run_cfg=run_cfg,
             device=args.device,
+            save_steps=save_steps,
         )
 
 

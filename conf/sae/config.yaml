@@ -1,15 +1,16 @@
 dataset:
   regex_name: "*"
   split: train
-project_name: "sae-debug"
-model_name: small
-device: cpu
-ablation_layers: [22]
+project_name: "medium-sae-trivial"
+model_name: medium
+device: cuda:1
+ablation_layers: [16]
 max_steps: 120000
 log_steps: 300
+save_steps: 900
 activation_batch_size: 10000
 warmup_steps: 300
-top_k: 32
+top_k: 64
 seed: 42
-sae_size_multiplier: 32
-lr: 0.001
+sae_size_multiplier: 4
+lr: 0.0001

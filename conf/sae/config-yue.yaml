@@ -1,18 +1,16 @@
 dataset:
-  name: amaai-lab/MusicBench
+  regex_name: "*"
   split: train
-  column: main_caption
 project_name: yue-sae
 model_name: 7B-anneal-en-icl
-device: cuda
+device: cuda:1
 ablation_layers: [15]
-max_gen_num_tokens: 200
 max_steps: 120000
 log_steps: 300
-activation_buffer_size: 6000
+save_steps: 900
 activation_batch_size: 1000
-text_batch_size: 2
 warmup_steps: 300
-top_k: 32
+top_k: 64
 seed: 42
-sae_size_multiplier: 8
+sae_size_multiplier: 3
+lr: 0.0001
