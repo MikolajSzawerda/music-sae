@@ -22,6 +22,14 @@ musicgen-ablation-relative-fad generations_dir score_path:
         uv run fadtk --inf clap-laion-audio {{ generations_dir }}/pure {{ generations_dir }}/$item {{ score_path }};
     done
 
+collect-musicgen-activations:
+    #!/bin/sh
+    uv run python scripts/collect_musicgen_activations.py
+
+train-musicgen-sae:
+    #!/bin/sh
+    uv run python scripts/train_sae_disk.py
+
 prepare-music-bench:
 	wget -O data/raw/MusicBench.tar.gz https://huggingface.co/datasets/amaai-lab/MusicBench/resolve/main/MusicBench.tar.gz
 	mkdir data/input/music-bench
