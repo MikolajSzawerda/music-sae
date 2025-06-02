@@ -1,3 +1,17 @@
+# rave
+rave/__pycache__/*
+rave/audio/*
+rave/pitch_params.txt
+rave/tempo_params.txt
+rave/.vscode/*
+rave/activations_sensivity_data/*
+rave/encoded/
+rave/weights/*
+rave/activations/*
+rave/activations_test/
+rave/activations_test_batches/
+rave/.venv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
