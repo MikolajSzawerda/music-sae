@@ -104,6 +104,22 @@ After manual listening of some features we have noticed that tracks despite bein
 
 We have used multimodal llm's to automaticaly find common features for those subsets. We have used Qwen and gemine-2.0-flash. After labeling we have calculated mean clap score between text description and audio embedings and for the best ones we have manualy listened to them
 
+![](figures/sae_interp.png)
+
+| Feature Name | Description |
+|--------------|-------------|
+| f5576 | Uptempo electronic dance music. |
+| f2933 | The snippets all feature the prominent use of bells or bell-like sounds, creating a resonant and percussive soundscape. |
+| f4666 | A collection of clips share the characteristic of featuring string instruments playing in a major key at a moderate tempo. |
+| f2587 | A collection of short clips featuring prominently string instruments playing melodic lines with acoustic timbres. |
+| f4788 | The audio clips share a common musical element centered around acoustic string instruments, particularly plucked instruments like guitar and mandolin, with a folk music influence. |
+| f1393 | The audio snippets feature percussive instruments and demonstrate an energetic rhythmic style with syncopation. |
+| f4798 | Collection of songs exhibiting traditional Middle Eastern melodic and rhythmic characteristics, prominently featuring wind instruments and danceable rhythms. |
+| f2255 | The clips feature brass instruments in what sounds like classical or light orchestral arrangements. |
+| f5235 | A collection of reggae-influenced music characterized by slow tempos and prominent bass lines. |
+| f4606 | The audio clips feature elements common in Balkan music. Characteristics are complex rhythms, wind and string instruments, and fast, danceable tempos. |
+
+
 ### SAE interventions
 
 We have tried performing intervention on small and medium models with algorithms:
