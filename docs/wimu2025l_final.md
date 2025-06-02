@@ -55,11 +55,11 @@ As proofed in the experiments there was requirment to use diverse audio/prompt d
 
 Due to YuE’s architecture, which processes vocal and instrumental tokens separately, we split the audio into vocal and instrumental stems. This also enabled the use of instrumental tracks in MusicGen instead of full audio, improving SAE variance by 0.1.
 
-To support other datasets in the future we introduced *plugin architecture* which allows to easly write custom transformations and loading for given dataset and use it with already present ones.
+To support other datasets in the future we introduced *plugin architecture* which allows to easily write custom transformations and loading for given dataset and use it with already present ones.
 
 Additionaly we have used *accelerate* library to easily support mutli-gpu execution.
 
-We used the nnsight library to trace the models without generating new tokens, which significantly sped up activation collection. This approach also allowed us to access, save, and intervene on activations directly, additionally enabling efficient ablation studies.
+We used the nnsight library to trace the models without generating new tokens, which significantly speed up activation collection. This approach also allowed us to access, save, and intervene on activations directly, additionally enabling efficient ablation studies.
 
 We used dictionary_learning as the main implementation of SAE, as it provides all the necessary functionalities required for our project, including feature extraction.
 
@@ -88,7 +88,7 @@ After lots of experiments it turned out that our activations normalization phase
 **Yue**
 
 
-During SAE training for the YuE model, we also observed that a lower expansion factor (EF) increases the SAE variance. In contrast to MusicGen, enabling activation normalization in slightly increases the SAE variance.
+During SAE training for the YuE model, we also observed that a lower expansion factor (EF) increases the SAE variance. Enabling activation normalization slightly increases the SAE variance.
 
 ![alt text](figures/yue_training.png)
 
@@ -96,13 +96,13 @@ During SAE training for the YuE model, we also observed that a lower expansion f
 
 After succesfull SAE training we performed automatic feature labeling process:
 - for each track activations we aggregated mean activation with respect to time
-- we calculated corpus-level feature activation rate(when mean activation > 0)
-- we filtered features which activation rate didn't meet 0.01 < act_rate < 0.25
+- we calculated corpus-level feature activation rate (when `mean activation > 0`)
+- we filtered features which activation rate didn't meet `0.01 < act_rate < 0.25`
 - for each feature we have grouped top 10 tracks with respect to their activation mean
 
-After manual listening of some features we have noticed that tracks despite being from complelty different recordings had simillar features.
+After manual listening of some features we have noticed that tracks despite being from completely different recordings had simillar features.
 
-We have used multimodal llm's to automaticaly find common features for those subsets. We have used Qwen and gemine-2.0-flash. After labeling we have calculated mean clap score between text description and audio embedings and for the best ones we have manualy listened to them
+We have used multimodal LLMs to automatically find common features for those subsets. We used Qwen and gemini-2.0-flash. After labeling, we calculated the mean CLAP score between text descriptions and audio embeddings, and for the best ones, we manually listened to them.
 
 ![](figures/sae_interp.png)
 
@@ -122,12 +122,12 @@ We have used multimodal llm's to automaticaly find common features for those sub
 
 ### SAE interventions
 
-We have tried performing intervention on small and medium models with algorithms:
-- before every nth token activate given feature in sae latent space and decode it
-- given prompt and sae features which fires within that prompt multiply by: negative;0;positive number and observe
-- copy activation pattern from track with feature A to generated track with prompt having feature B
+We experimented with interventions on small and medium models using the following algorithms:
+- Activating a specific SAE feature before every nth token and decoding the result.
+- Modulating SAE features triggered by a given prompt by multiplying them with negative, zero, or positive values and observing the effect.
+- Transferring activation patterns of feature A from one track to a generated track prompted with feature B.
 
-Unfortunetly quality of the outputs wasn't as crisp as we expected and potentialy we require to increase diveristy and quality of the datasets.
+Unfortunately, the output quality was not as crisps as we expected, indicating a need to improve dataset diversity and quality.
 
 ## Limitations and discovered issues
 
