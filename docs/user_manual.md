@@ -32,14 +32,29 @@ The project focuses on three main music models:
 
 ## Installation
 
-```
+This installation guide covers setup for single datasets only. For additional commands and options, please refer to the [justfile](./../justfile).
+
+#### 1. Prepare the environment
+```bash
 just
 ```
-This will:
+This command will:
 - Set up pre-commit hooks
 - Create a virtual environment using `uv`
-- Download required Python version
-- install dependencies from `pyproject.toml`
+- Download the required Python version
+- Install dependencies specified in `pyproject.toml`
+
+#### 2. Download datasets
+```bash
+just prepare-music-bench
+```
+This command downloads and prepares the MusicBench dataset.
+
+#### 3. Split datasets
+```bash
+just split-music-bench
+```
+This command splits the audio files into separate stems (e.g., vocals and instruments).
 
 ## Project Structure Overview
 
@@ -50,16 +65,41 @@ For a detailed overview of the project structure, see [README.md](./../README.md
 Most experiments are configured using `.yaml` files under the `conf/` directory. For model-specific options and detailed configuration guidelines, refer to the model documentation.
 
 ## Running Experiments
-
 Use the `just` command to execute predefined experiments.
 
-### 🔧 Example
+#### 1. Ablation Study
+```bash
+just musicgen-ablation-generation
+```
+Runs the ablation study on the MusicGen model.
 
 ```bash
-just split-audio
+just musicgen-ablation-fad <generation_dir> <score_path>
 ```
+Generates charts with the calculated Fréchet Audio Distance (FAD) scores for the ablation study results.
+* `<generation_dir>` — directory containing generated audio samples
+* `<score_path>` — output path for the generated FAD charts
 
-This command splits the downloaded dataset's audio files into two stems: vocals and instrumentals using Demucs.
+#### 2. Activations Collection
+```bash
+just collect-musicgen-activations
+```
+Collects activations from the MusicGen model.
+
+#### 3. Training SAE
+```bash
+just train-musicgen-sae
+```
+Trains a Sparse AutoEncoder (SAE) for the MusicGen model.
+
+#### 4. Interpretation
+```bash
+just interpretation-musicgen 
+```
+```
+@TODO: write justfile command and add optional arguments
+```
+Runs interpretation for MusicGen model.
 
 ## Available Models
 
