@@ -1,0 +1,17 @@
+dataset:
+  split: train
+model_names: [7B-anneal-en-icl, medium]
+activation_dims:
+  - 7B-anneal-en-icl: 4096
+  - medium: 1536
+device: cuda:0
+ablation_layers: [[15, 16]]
+max_steps: 120000
+log_steps: 300
+save_steps: 1500
+activation_batch_size: 1000
+warmup_steps: 300
+top_k: 64
+seed: 42
+sae_size_multiplier: 3
+project_name: "musicgen-vs-yue-usae"

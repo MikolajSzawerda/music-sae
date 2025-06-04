@@ -233,12 +233,12 @@ class USAETopKTrainer(SAETrainer):
         self.dead_features = -1
         self.pre_norm_auxk_loss = -1
 
-    def get_auxiliary_loss(self, num_tokens_since_fired, residual_BD: t.Tensor, post_relu_acts_BF: t.Tensor):
+    def get_auxiliary_loss(self, num_tokens_since_fired, residual_BD: t.Tensor, post_relu_acts_BF: t.Tensor, top_k_aux):
         dead_features = num_tokens_since_fired >= self.dead_feature_threshold
         self.dead_features = int(dead_features.sum())
 
         if self.dead_features > 0:
-            k_aux = min(self.top_k_aux, self.dead_features)
+            k_aux = min(top_k_aux, self.dead_features)
 
             auxk_latents = t.where(dead_features[None], post_relu_acts_BF, -t.inf)
 
@@ -300,7 +300,9 @@ class USAETopKTrainer(SAETrainer):
         self.num_tokens_since_fired[model_name] += num_tokens_in_step
         self.num_tokens_since_fired[model_name][did_fire] = 0
         auxk_loss = (
-            self.get_auxiliary_loss(self.num_tokens_since_fired[model_name], e.detach(), post_relu_acts_BF)
+            self.get_auxiliary_loss(
+                self.num_tokens_since_fired[model_name], e.detach(), post_relu_acts_BF, self.top_k_auxs[model_name]
+            )
             if self.auxk_alpha > 0
             else 0
         )
