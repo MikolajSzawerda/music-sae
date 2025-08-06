@@ -35,12 +35,13 @@ def main():
     print("Główne moduły pqmf", [dict["module name"] for dict in structure[0]["children"]])
     print(
         "Główne moduły encoder",
-        [dict["module name"] for dict in structure[1]["children"]],
+        [dict["module name"] for dict in structure[1]["children"][0]["children"][0]["children"]],
     )
     print(
-        "Wymiary parametrów pierwszej warstwy sieci",
+        "Wymiary wejścia sieci",
         list(structure[0]["model"].named_parameters())[0][1].shape,
     )
+    print(model_with_weights)
 
 
 if __name__ == "__main__":

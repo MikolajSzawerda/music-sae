@@ -4,14 +4,14 @@ from rave.model import RAVE
 
 
 def loadGinConfig(config_paths: list[str]):
-    gin.clear_config()  # Czyścimy wcześniejszą konfigurację
+    gin.clear_config()
     for config_path in config_paths:
-        gin.parse_config_file(config_path)  # Wczytanie konfiguracji
+        gin.parse_config_file(config_path)
 
 
 def createRaveModelFormGinConfigFile(config_paths: list[str]):
-    loadGinConfig(config_paths)  # Wczytanie konfiguracji
-    model = RAVE()  # RAVE pobierze wartości z Gin Config
+    loadGinConfig(config_paths)
+    model = RAVE()
     return model
 
 
