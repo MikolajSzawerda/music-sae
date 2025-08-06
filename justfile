@@ -43,3 +43,7 @@ split-song-describer:
 
 split-mtg-jamendo:
     uv run accelerate launch --gpu_ids="0,1" --main_process_port=29503 scripts/split_audio.py +audio_input_dir=data/input/mtg-jamendo/datashare +vocals_output_dir=data/input/mtg-jamendo/datashare-vocals +instruments_output_dir=data/input/mtg-jamendo/datashare-instruments +verify=True +verify_workers=16
+run-intervention-eval:
+    uv run python3 scripts/eval_interventions.py data/output/sae_interventions/run_20250806_211548_348865cd/ --output data/output/sae_interventions/results.json
+run-intervention-gen:
+    uv run python3 scripts/generate_interventions.py --features 4606 5235 2255 4798 1393 4788 2587 4666 2933 5576 --max_tokens 200 --intervention_frequency 2 --intervention_value "-2" --algorithm set_value --generate_baseline_clean --generate_baseline_passthrough
