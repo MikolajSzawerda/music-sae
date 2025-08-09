@@ -6,7 +6,6 @@ authors = [{ name = "Mikołaj Szawerda", email = "mikolaj.szawerda@gmail.com" },
 requires-python = ">=3.10,<3.11"
 readme = "README.md"
 dependencies = [
-    "flash-attn==2.7.3",
     "ipykernel>=6.29.5,<7",
     "transformers>=4.50.0,<5",
     "scipy>=1.15.2,<2",
@@ -52,26 +51,8 @@ dev = [
     "rust-just>=1.40.0",
 ]
 
-[tool.uv]
-no-build-isolation-package = [ "flash-attn" ]
-
 [tool.uv.sources]
 dictionary-learning = { git = "https://github.com/MikolajSzawerda/dictionary_learning", rev="63dbe5a941cfd5ce4b5b634450b6cf0b2d1b35f0" }
-
-torch = [
-    { index = "pytorch-cu121" },
-]
-torchaudio = [
-    { index = "pytorch-cu121" },
-]
-torchvision = [
-    { index = "pytorch-cu121" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cu121"
-url = "https://download.pytorch.org/whl/cu121"
-explicit = true
 
 [project.entry-points."ds_plugins"]
 music_bench_plugin = "musicsae.ds_plugins.music_bench_plugin:MusicBenchPlugin"

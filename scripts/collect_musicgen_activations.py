@@ -26,6 +26,7 @@ class CollectScriptConfig:
     model_sampling_rate: int = 32000
     max_examples_per_shard: int = 100
     resample_sr: int = 32000
+    act_dir: str = "activation"
 
 
 cs = ConfigStore.instance()
@@ -58,7 +59,7 @@ def main(args: CollectScriptConfig):
             collect_bs = ds_cfg.get("batch_size") or args.collect_batch_size
             max_tokens = ds_cfg.get("max_tokens") or args.max_gen_num_tokens
             for layer_id in list(args.layers):
-                path = INPUT_DATA_DIR / "activation" / args.model_name / name / str(layer_id) / split
+                path = INPUT_DATA_DIR / args.act_dir / args.model_name / name / str(layer_id) / split
                 path.mkdir(exist_ok=True, parents=True)
                 layer = nn_model.decoder.model.decoder.layers[layer_id]
 

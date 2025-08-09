@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 
 
-def load_and_chunk_audio(audio_dir: Path, examples, model_sr=16000, chunk_duration_s=10):
-    res = {"audio_tensor": [], "main_caption": []}
+def load_and_chunk_audio(audio_dir: Path, examples, audio_col_name: str, model_sr=16000, chunk_duration_s=10):
+    res = {audio_col_name: [], "main_caption": []}
     for i, path in enumerate(examples["path"]):
         audio_path = audio_dir / path
         audio_tensor, sr = torchaudio.load(str(audio_path))
@@ -26,7 +26,7 @@ def load_and_chunk_audio(audio_dir: Path, examples, model_sr=16000, chunk_durati
             if length < chunk_size:
                 padding = np.zeros(chunk_size - length, dtype=chunk_data.dtype)
                 chunk_data = np.concatenate([chunk_data, padding], axis=0)
-            res["audio_tensor"].append(chunk_data)
+            res[audio_col_name].append(chunk_data)
             res["main_caption"].append(examples["main_caption"][i])
     return res
 
@@ -34,20 +34,36 @@ def load_and_chunk_audio(audio_dir: Path, examples, model_sr=16000, chunk_durati
 class JamendoPlugin(AudioDatasetPlugin):
     name = "jamendo_plugin"
 
-    def __init__(self, resample_sr: int, max_rows: int, max_pre_rows: int, seed: int, **kwargs):
+    def __init__(
+        self,
+        resample_sr: int,
+        max_rows: int,
+        max_pre_rows: int,
+        seed: int,
+        tracks_csv: str = "tracks_filtered.csv",
+        audio_col_name: str = "audio_tensor",
+        **kwargs,
+    ):
         self.resample_sr = resample_sr
         self.max_rows = max_rows
         self.max_pre_rows = max_pre_rows
         self.seed = seed
+        self.tracks_csv = tracks_csv
+        self.audio_col_name = audio_col_name
 
     def load(self, split: str = "train", base_dir: Path = None, with_audio: bool = True, **kwargs):
-        ds = load_dataset("csv", data_files=str(base_dir / "tracks_filtered.csv"), split=split)
+        ds = load_dataset("csv", data_files=str(base_dir / self.tracks_csv), split=split)
         ds = ds.shuffle(self.seed)
         ds = ds.select_columns(["path", "text"]).rename_column("text", "main_caption")
         ds = ds.select(range(min(self.max_pre_rows, len(ds))))
         if with_audio:
             ds = ds.map(
-                lambda x: load_and_chunk_audio(base_dir, x, model_sr=self.resample_sr),
+                lambda x: load_and_chunk_audio(
+                    base_dir / "datashare-instruments",
+                    x,
+                    audio_col_name=self.audio_col_name,
+                    model_sr=self.resample_sr,
+                ),
                 batched=True,
                 batch_size=36,
                 remove_columns=["path"],
