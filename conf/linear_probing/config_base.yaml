@@ -1,0 +1,16 @@
+dataset:
+  regex_name: jamendo_plugin
+  split: train
+model_name: medium
+device: cuda:0
+layer_id: 16
+seed: 42
+activation_name: raggae
+output_name: activation
+use_sae: False
+sae_device: cuda:0
+sae_model_name: ""
+sae_batch_size: 1
+sae_features: []
+sae_features_k: 0
+sae_generate_features: False

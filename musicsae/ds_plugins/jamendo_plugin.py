@@ -31,6 +31,13 @@ def load_and_chunk_audio(audio_dir: Path, examples, model_sr=16000, chunk_durati
     return res
 
 
+def wrapper_load_and_chunk_audio(audio_dir: Path, model_sr: int = 16000, chunk_duration_s=10):
+    def wrapper(x):
+        return load_and_chunk_audio(audio_dir, x, model_sr, chunk_duration_s)
+
+    return wrapper
+
+
 class JamendoPlugin(AudioDatasetPlugin):
     name = "jamendo_plugin"
 
@@ -40,17 +47,26 @@ class JamendoPlugin(AudioDatasetPlugin):
         self.max_pre_rows = max_pre_rows
         self.seed = seed
 
-    def load(self, split: str = "train", base_dir: Path = None, with_audio: bool = True, **kwargs):
+    def load(
+        self,
+        split: str = "train",
+        base_dir: Path = None,
+        with_audio: bool = True,
+        separate_vocals_and_instruments: bool = False,
+        **kwargs,
+    ):
         ds = load_dataset("csv", data_files=str(base_dir / "tracks_filtered.csv"), split=split)
         ds = ds.shuffle(self.seed)
         ds = ds.select_columns(["path", "text"]).rename_column("text", "main_caption")
         ds = ds.select(range(min(self.max_pre_rows, len(ds))))
+
         if with_audio:
             ds = ds.map(
-                lambda x: load_and_chunk_audio(base_dir, x, model_sr=self.resample_sr),
+                wrapper_load_and_chunk_audio(base_dir / "datashare-instruments", model_sr=self.resample_sr),
                 batched=True,
-                batch_size=36,
+                batch_size=32,
                 remove_columns=["path"],
+                num_proc=4,
             )
         else:
             ds = ds.select_columns(["main_caption"])

@@ -1,0 +1,16 @@
+dataset:
+  regex_name: jamendo_plugin
+  split: train
+model_name: medium
+device: cuda:0
+layer_id: 16
+seed: 42
+activation_name: raggae
+output_name: sae
+use_sae: True
+sae_device: cuda:0
+sae_model_name: medium-sae-trivial-medium-sae-ee3b/16/trainer_0/checkpoints/ae_71100.pt
+sae_batch_size: 512
+sae_features: [1473, 1275, 502, 513, 1223, 805, 816, 1350, 17, 111, 1387, 261, 826, 849, 76, 27, 842, 132, 36, 586, 717, 548, 813, 1066, 880, 876, 134, 438, 806, 1025, 1168, 716]
+sae_features_k: 32
+sae_generate_features: False
