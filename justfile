@@ -47,3 +47,5 @@ run-intervention-eval:
     uv run python3 scripts/eval_interventions.py data/output/sae_interventions/run_20250806_211548_348865cd/ --output data/output/sae_interventions/results.json
 run-intervention-gen:
     uv run python3 scripts/generate_interventions.py --features 4606 5235 2255 4798 1393 4788 2587 4666 2933 5576 --max_tokens 200 --intervention_frequency 2 --intervention_value "-2" --algorithm set_value --generate_baseline_clean --generate_baseline_passthrough
+run-filtered-act:
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/collect_musicgen_activations.py --config-name="config-jamendo-anty-reggae"
