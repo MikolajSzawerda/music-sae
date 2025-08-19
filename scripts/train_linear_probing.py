@@ -12,6 +12,8 @@ import joblib
 import numpy as np
 from collections import defaultdict
 from dictionary_learning.trainers.top_k import AutoEncoderTopK
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 
 
 @dataclass
@@ -60,18 +62,9 @@ def debug(func):
     return wrapper
 
 
-def add_label(batch: dict, label: int) -> dict:
+def add_label_and_unpack(batch: dict, label: int) -> dict:
     batch["label"] = [label] * len(batch["activation"])
-    return batch
-
-
-def unpack_and_normalize(batch: dict) -> dict:
     batch["activation"] = [item[0] for item in batch["activation"]]
-
-    # arr = np.array(batch["activation"], dtype=float)
-    # norms = np.linalg.norm(arr, axis=1, keepdims=True)
-    # batch["activation"] = (arr / norms).tolist()
-
     return batch
 
 
@@ -143,11 +136,10 @@ def main(cfg: LinearProbingScriptConfig):
         split="train",
     )
 
-    ds_negative = ds_negative.map(lambda x: add_label(x, 0), num_proc=12, batched=True, batch_size=1024)
-    ds_positive = ds_positive.map(lambda x: add_label(x, 1), num_proc=12, batched=True, batch_size=1024)
+    ds_negative = ds_negative.map(lambda x: add_label_and_unpack(x, 0), num_proc=12, batched=True, batch_size=1024)
+    ds_positive = ds_positive.map(lambda x: add_label_and_unpack(x, 1), num_proc=12, batched=True, batch_size=1024)
 
     ds = interleave_datasets([ds_positive, ds_negative])
-    ds = ds.map(unpack_and_normalize, num_proc=12, batched=True, batch_size=1024)
     ds.set_format(type="numpy", columns=["activation", "label"])
 
     if cfg.use_sae:
@@ -180,7 +172,7 @@ def main(cfg: LinearProbingScriptConfig):
         y_pred = classifier.predict(X_test)
         return classification_report(y_test, y_pred)
 
-    clf = LogisticRegression(max_iter=1000)
+    clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
     train(clf, train_ds)
     print(evaluate(clf, test_ds))
 
