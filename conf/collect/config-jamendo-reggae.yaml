@@ -1,0 +1,19 @@
+resample_sr: 32000
+seed: 42
+datasets:
+  - name: "jamendo_plugin"
+    split: "train"
+    max_pre_rows: 4000
+    max_rows: 4000
+    postfix_path: "mtg-jamendo"
+    with_audio: True
+    tracks_csv: "tracks_reggae.csv"
+    audio_col_name: "instruments_tensor"
+model_name: medium
+device: cuda
+layers: [16]
+max_gen_num_tokens: 255
+collect_batch_size: 1
+model_sampling_rate: 32000
+max_examples_per_shard: 1000000
+act_dir: raggae_activation
