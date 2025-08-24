@@ -53,7 +53,7 @@ def main(args: TrainScriptConfig):
             "arrow",
             data_files=str(
                 INPUT_DATA_DIR
-                / "activation"
+                / "usae_activations"
                 / args.model_name
                 / args.dataset.regex_name
                 / str(layer_id)
@@ -112,7 +112,7 @@ def main(args: TrainScriptConfig):
             use_wandb=True,
             wandb_project=args.project_name,
             log_steps=args.log_steps,
-            normalize_activations=False,
+            normalize_activations=True,
             run_cfg=run_cfg,
             device=args.device,
         )
