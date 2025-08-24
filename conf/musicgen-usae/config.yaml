@@ -9,12 +9,14 @@ activation_dims:
 device: cuda
 ablation_layers: [16]
 max_gen_num_tokens: 200
-max_steps: 120000
-log_steps: 300
+max_steps: 6000
+log_steps: 100
 activation_buffer_size: 6000
 activation_batch_size: 10000
 text_batch_size: 2
 warmup_steps: 300
 top_k: 32
 seed: 42
-sae_size_multiplier: 32
+sae_size_multiplier: 16
+save_steps: 400
+resume_from: "/home/mszawerda/music-sae/models/musicgen-usae/16/checkpoints/ae_4800.pt"

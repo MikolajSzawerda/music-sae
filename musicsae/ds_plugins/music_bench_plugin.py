@@ -7,7 +7,7 @@ from pathlib import Path
 def add_audio_to_sample(audio_path: Path, model_sr, sample):
     audio_tensor, sr = torchaudio.load(str(audio_path / sample["location"]))
     transform = torchaudio.transforms.Resample(sr, model_sr)
-    sample["audio_tensor"] = transform(audio_tensor).numpy()[0]
+    sample["instruments_tensor"] = transform(audio_tensor).numpy()[0]
     sample["sr"] = model_sr
     return sample
 
@@ -49,7 +49,7 @@ class MusicBenchPlugin(AudioDatasetPlugin):
                 ).select_columns(["main_caption", "vocals_tensor", "instruments_tensor", "sr"])
             else:
                 ds = ds.map(lambda x: add_audio_to_sample(base_dir, self.resample_sr, x)).select_columns(
-                    ["main_caption", "audio_tensor", "sr"]
+                    ["main_caption", "instruments_tensor", "sr"]
                 )
         else:
             ds = ds.select_columns(["main_caption"])

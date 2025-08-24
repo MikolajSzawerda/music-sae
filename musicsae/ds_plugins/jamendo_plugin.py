@@ -5,7 +5,9 @@ from pathlib import Path
 import numpy as np
 
 
-def load_and_chunk_audio(audio_dir: Path, examples, audio_col_name: str, model_sr=16000, chunk_duration_s=10):
+def load_and_chunk_audio(
+    audio_dir: Path, examples, audio_col_name: str, model_sr=16000, chunk_duration_s=10, hop_size=0
+):
     res = {audio_col_name: [], "main_caption": []}
     for i, path in enumerate(examples["path"]):
         audio_path = audio_dir / path
@@ -18,7 +20,7 @@ def load_and_chunk_audio(audio_dir: Path, examples, audio_col_name: str, model_s
         chunk_size = model_sr * chunk_duration_s // 2
         total_samples = audio_array.shape[0]
 
-        for start in range(0, total_samples, chunk_size):
+        for start in range(0, total_samples, chunk_size + (hop_size * model_sr)):
             end = start + chunk_size
             chunk_data = audio_array[start:end]
 
@@ -42,6 +44,7 @@ class JamendoPlugin(AudioDatasetPlugin):
         seed: int,
         tracks_csv: str = "tracks_filtered.csv",
         audio_col_name: str = "audio_tensor",
+        hop_size: int = 0,
         **kwargs,
     ):
         self.resample_sr = resample_sr
@@ -50,12 +53,13 @@ class JamendoPlugin(AudioDatasetPlugin):
         self.seed = seed
         self.tracks_csv = tracks_csv
         self.audio_col_name = audio_col_name
+        self.hop_size = hop_size
 
     def load(self, split: str = "train", base_dir: Path = None, with_audio: bool = True, **kwargs):
         ds = load_dataset("csv", data_files=str(base_dir / self.tracks_csv), split=split)
         ds = ds.shuffle(self.seed)
         ds = ds.select_columns(["path", "text"]).rename_column("text", "main_caption")
-        ds = ds.select(range(min(self.max_pre_rows, len(ds))))
+        ds = ds.select(range(1000, 1000 + min(self.max_pre_rows, len(ds))))
         if with_audio:
             ds = ds.map(
                 lambda x: load_and_chunk_audio(
@@ -63,6 +67,7 @@ class JamendoPlugin(AudioDatasetPlugin):
                     x,
                     audio_col_name=self.audio_col_name,
                     model_sr=self.resample_sr,
+                    hop_size=self.hop_size,
                 ),
                 batched=True,
                 batch_size=36,

@@ -1,0 +1,16 @@
+resample_sr: 32000
+seed: 42
+datasets:
+  - name: "music_bench_plugin"
+    split: "train"
+    max_rows: 16000
+    postfix_path: "music-bench/datashare-instruments"
+    with_audio: True
+model_name: medium
+device: cuda
+layers: [16]
+max_gen_num_tokens: 255
+collect_batch_size: 5
+model_sampling_rate: 32000
+max_examples_per_shard: 1000000
+act_dir: usae_activations
