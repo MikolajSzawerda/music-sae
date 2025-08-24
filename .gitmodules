@@ -1,3 +1,6 @@
 [submodule "dependencies/mtg-jamendo"]
 	path = dependencies/mtg-jamendo
 	url = https://github.com/MTG/mtg-jamendo-dataset.git
+[submodule "dependencies/fadtk"]
+	path = dependencies/fadtk
+	url = https://github.com/microsoft/fadtk.git
