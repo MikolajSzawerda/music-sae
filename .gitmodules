@@ -1,30 +1,3 @@
-[submodule "dependencies/audiocraft"]
-	path = dependencies/audiocraft
-	url = https://github.com/facebookresearch/audiocraft.git
-[submodule "dependencies/musicgen"]
-	path = dependencies/musicgen
-	url = https://github.com/yukara-ikemiya/minimal-musicgen-for-developers.git
-[submodule "dependencies/universal-sae"]
-	path = dependencies/universal-sae
-	url = https://github.com/MikolajSzawerda/universal-sae.git
-[submodule "dependencies/dictionary_learning"]
-	path = dependencies/dictionary_learning
-	url = https://github.com/saprmarks/dictionary_learning.git
-[submodule "dependencies/riffusion"]
-	path = dependencies/riffusion
-	url = https://github.com/riffusion/riffusion-hobby.git
-[submodule "dependencies/nnsight"]
-	path = dependencies/nnsight
-	url = https://github.com/ndif-team/nnsight.git
-[submodule "dependencies/fadtk"]
-	path = dependencies/fadtk
-	url = https://github.com/MikolajSzawerda/fadtk.git
-[submodule "dependencies/rave"]
-	path = dependencies/rave
-	url = https://github.com/acids-ircam/RAVE.git
-[submodule "dependencies/xcodec_mini_infer"]
-	path = dependencies/xcodec_mini_infer
-	url = https://huggingface.co/m-a-p/xcodec_mini_infer.git
 [submodule "dependencies/mtg-jamendo"]
 	path = dependencies/mtg-jamendo
 	url = https://github.com/MTG/mtg-jamendo-dataset.git
