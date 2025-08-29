@@ -9,6 +9,10 @@ def load_and_chunk_audio(audio_dir: Path, examples, audio_col_name: str, model_s
     res = {audio_col_name: [], "main_caption": []}
     for i, path in enumerate(examples["path"]):
         audio_path = audio_dir / path
+
+        if not audio_path.exists():
+            continue
+
         audio_tensor, sr = torchaudio.load(str(audio_path))
         transform = torchaudio.transforms.Resample(orig_freq=sr, new_freq=model_sr)
         audio_resampled = transform(audio_tensor)  # shape: (channels, samples)
@@ -75,7 +79,7 @@ class JamendoPlugin(AudioDatasetPlugin):
                 batched=True,
                 batch_size=32,
                 remove_columns=["path"],
-                num_proc=4,
+                num_proc=1,
             )
         else:
             ds = ds.select_columns(["main_caption"])

@@ -49,3 +49,40 @@ run-intervention-gen:
     uv run python3 scripts/generate_interventions.py --features 4606 5235 2255 4798 1393 4788 2587 4666 2933 5576 --max_tokens 200 --intervention_frequency 2 --intervention_value "-2" --algorithm set_value --generate_baseline_clean --generate_baseline_passthrough
 run-filtered-act:
     CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/collect_musicgen_activations.py --config-name="config-jamendo-anty-reggae"
+
+run-filter-tracks-by-genre genre:
+    uv run python scripts/utils/filter_tracks.py data/input/mtg-jamendo/tracks.csv data/input/mtg-jamendo/tracks_{{genre}}.csv --keywords {{genre}}
+    uv run python scripts/utils/filter_tracks.py data/input/mtg-jamendo/tracks.csv data/input/mtg-jamendo/tracks_anti_{{genre}}.csv --keywords "Music" --anti-keywords {{genre}}
+
+run-collect-activations-by-genre genre:
+    CUDA_VISIBLE_DEVICES=0 uv run python3 scripts/collect_musicgen_activations.py --config-name="config-jamendo-generic" "act_dir={{genre}}_activation" "datasets.0.tracks_csv=tracks_{{genre}}.csv"
+    CUDA_VISIBLE_DEVICES=0 uv run python3 scripts/collect_musicgen_activations.py --config-name="config-jamendo-generic" "act_dir=anti_{{genre}}_activation" "datasets.0.tracks_csv=tracks_anti_{{genre}}.csv"
+
+run-linear-probing genre:
+    rm -rf ~/.cache/huggingface
+
+    @echo "Activation"
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/train_linear_probing.py "activation_name={{genre}}" "raport_path=raport/{{genre}}/act_lr"
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/train_linear_probing.py "activation_name={{genre}}" "method=forest" "raport_path=raport/{{genre}}/act_rf"
+    
+    rm -rf ~/.cache/huggingface
+    
+    @echo "SAE: 32"
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/train_linear_probing.py --config-name "config_sae" "sae_generate_features=True" "activation_name={{genre}}" "sae_features_k=32" "raport_path=raport/{{genre}}/sae32_lr"
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/train_linear_probing.py --config-name "config_sae" "sae_generate_features=True" "activation_name={{genre}}" "method=forest" "sae_features_k=32" "raport_path=raport/{{genre}}/sae32_rf"
+    
+    rm -rf ~/.cache/huggingface
+
+    @echo "SAE: 512"
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/train_linear_probing.py --config-name "config_sae" "sae_generate_features=True" "activation_name={{genre}}" "sae_features_k=512" "raport_path=raport/{{genre}}/sae512_lr"
+    CUDA_VISIBLE_DEVICES=1 uv run python3 scripts/train_linear_probing.py --config-name "config_sae" "sae_generate_features=True" "activation_name={{genre}}" "method=forest" "sae_features_k=512" "raport_path=raport/{{genre}}/sae512_rf"
+
+    rm -rf ~/.cache/huggingface
+
+run-linear-probing-pipeline genre: (run-filter-tracks-by-genre genre) (run-collect-activations-by-genre genre) (run-linear-probing genre)
+    @echo "DONE"
+
+    rm -rf data/input/{{genre}}_activation
+    rm -rf data/input/anti_{{genre}}_activation
+
+run-linear-probing-pipeline-all: (run-linear-probing-pipeline "electronic") (run-linear-probing-pipeline "pop") (run-linear-probing-pipeline "rock") (run-linear-probing-pipeline "ambient") (run-linear-probing-pipeline "dance") (run-linear-probing-pipeline "hiphop") (run-linear-probing-pipeline "jazz")

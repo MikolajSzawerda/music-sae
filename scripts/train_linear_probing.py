@@ -6,6 +6,8 @@ from src.project_config import INPUT_DATA_DIR, MODELS_DIR
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 import tqdm
+from typing import Optional
+from pathlib import Path
 import time
 import torch
 import joblib
@@ -14,6 +16,7 @@ from collections import defaultdict
 from dictionary_learning.trainers.top_k import AutoEncoderTopK
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
+from sklearn.ensemble import RandomForestClassifier
 
 
 @dataclass
@@ -32,6 +35,8 @@ class LinearProbingScriptConfig:
     activation_name: str = "raggae"
     output_name: str = "default"
 
+    method: str = "logistic"  # options: "forest", "logistic"
+
     use_sae: bool = False
     sae_device: str = "cuda:0"
     sae_model_name: str = ""
@@ -39,6 +44,7 @@ class LinearProbingScriptConfig:
     sae_features: list[int] = field(default_factory=list)
     sae_features_k: int = 32
     sae_generate_features: bool = False
+    raport_path: Optional[Path] = None
 
 
 cs = ConfigStore.instance()
@@ -105,6 +111,8 @@ def calculate_most_active_features(ds: Dataset | DatasetDict, k: int) -> dict:
 
 @hydra.main(version_base=None, config_path="../conf/linear_probing", config_name="config_base")
 def main(cfg: LinearProbingScriptConfig):
+    print("USED METHOD", cfg.method)
+
     ds_negative = load_dataset(
         "arrow",
         data_files=str(
@@ -150,7 +158,7 @@ def main(cfg: LinearProbingScriptConfig):
         )
         ds = ds.map(lambda x: select_features(x, features), num_proc=12, batched=True, batch_size=cfg.sae_batch_size)
 
-    ds.shuffle(cfg.seed)
+    ds = ds.shuffle(cfg.seed)
 
     train_ds, test_ds = ds.train_test_split(test_size=0.1).values()
 
@@ -172,21 +180,43 @@ def main(cfg: LinearProbingScriptConfig):
         y_pred = classifier.predict(X_test)
         return classification_report(y_test, y_pred)
 
-    clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
+    if cfg.method == "logistic":
+        clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
+    elif cfg.method == "forest":
+        clf = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=cfg.seed)
+    else:
+        raise ValueError("Unknown method!")
+
     train(clf, train_ds)
-    print(evaluate(clf, test_ds))
+    raport = evaluate(clf, test_ds)
 
     save_path = MODELS_DIR / "linear_probing" / cfg.model_name / cfg.activation_name / f"{cfg.output_name}.joblib"
     save_path.parent.mkdir(exist_ok=True, parents=True)
     joblib.dump(clf, str(save_path))
 
-    importance = clf.coef_[0]
+    if cfg.method == "logistic":
+        log_reg = clf.named_steps["logisticregression"]
+        importance = log_reg.coef_[0]
+    elif cfg.method == "forest":
+        importance = clf.feature_importances_
+
+    importance = np.array(importance).ravel()
     abs_importance = np.abs(importance)
     print(list(abs_importance))
 
     indices = np.argsort(abs_importance)[::-1]
     for i in indices[:100]:
         print(f"Feature {i}: weight={importance[i]:.4f}, abs={abs_importance[i]:.4f}")
+
+    if cfg.raport_path is not None:
+        cfg.raport_path.parent.mkdir(exist_ok=True, parents=True)
+
+        with open(str(cfg.raport_path), "w") as handle:
+            handle.write(raport)
+            handle.write("\n\n\n")
+
+            for i in indices[:100]:
+                handle.write(f"Feature {i}: weight={importance[i]:.4f}, abs={abs_importance[i]:.4f}\n")
 
 
 if __name__ == "__main__":
