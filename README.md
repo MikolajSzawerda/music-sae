@@ -11,17 +11,18 @@
 
 MusicSAE is a research-oriented project focused on exploring the potential of **Sparse Autoencoders (SAEs)** in the context of music models. In particular, it investigates how SAEs can be applied to extract meaningful laten representations from state-of-the-art generative audio models, such as **RAVE**, **MusicGen**, and **YuE**.
 
-This project is developed as part of the **WIMU 2025L** and **ZZSN 2025L** courses at the **Warsaw University of Technology**.
-Details about the schedule and scope of work can be found in the [WIMU 2025L scope](docs/wimu2025l.md) and [ZZSN 2025L scope](docs/zzsn2025l.md) files respectively. 
+This project is developed as part of the **WIMU 2025L**, **ZZSN 2025L** and **SIWY 2025Z** courses at the **Warsaw University of Technology**.
+Details about the schedule and scope of work can be found in the [WIMU 2025L scope](docs/wimu2025l_init.md), [ZZSN 2025L scope](docs/zzsn2025l_init.md) and [SIWY 2025Z scope](docs/siwy2025z_init.md) files respectively. 
 Final documentations: [WIMU 2025L documentation](docs/wimu2025l_final.md).
 
 ## 👥 Team  
 
 ### Project Members
 
-- **Mikołaj Szawerda** - Leader
+- **Mikołaj Szawerda** - Leader 
 - **Mateusz Kiełbus**
 - **Patryk Filip Gryz**
+- **Anna Schäfer**
 
 ### Contributors
 
