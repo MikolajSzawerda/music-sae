@@ -69,3 +69,6 @@ The goal of the project is to extend the previous research with the quality eval
 | | https://arxiv.org/abs/2405.08366 | |
 | | https://openreview.net/forum?id=HpUs2EXjOl | |
 | | https://arxiv.org/abs/2509.23717v1 | |
+| | https://arxiv.org/pdf/2509.24793 | |
+| | https://arxiv.org/pdf/2505.18186 | |
+| | https://arxiv.org/pdf/2502.17514 | |
