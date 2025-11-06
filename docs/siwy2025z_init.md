@@ -14,18 +14,17 @@ The goal of the project is to extend the previous research with the quality eval
 
 | Date            | Task | 
 | --------------- | ---- | 
-|  3 Nov -  9 Nov | ?    |
+|  3 Nov -  9 Nov | Familiarization with materials and domain    |
 | 10 Nov - 16 Nov | ?    |
 | 17 Nov - 23 Nov | ?    |
-| 24 Nov - 30 Nov | ?    |
 | 24 Nov - 30 Nov | ?    |
 |  1 Dec -  7 Dec | ?    |
 |  8 Dec - 14 Dec | ?    |
 | 15 Dec - 21 Dec | ?    |
-| 22 Dec - 28 Dec | ?    |
-| 29 Dec -  4 Jan | ?    |
+| 22 Dec - 28 Dec | Winter break / *Reserve*    |
+| 29 Dec -  4 Jan | Winter break / *Reserve*    |
 |  5 Jan - 11 Jan | ?    |
-| 12 Jan - 18 Jan | ?    |
+| 12 Jan - 18 Jan | Polishing    |
 | 19 Jan - 23 Jan | *Reserve* |
 
 \*Reserve - reserve week to catch up on delayed tasks
@@ -72,3 +71,4 @@ The goal of the project is to extend the previous research with the quality eval
 | | https://arxiv.org/pdf/2509.24793 | |
 | | https://arxiv.org/pdf/2505.18186 | |
 | | https://arxiv.org/pdf/2502.17514 | |
+
